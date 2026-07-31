@@ -1,0 +1,45 @@
+@model AttendanceManagement.Web.ViewModels.LeavePolicies.LeavePolicyViewModel
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Edit Leave Policy" : "Create Leave Policy";
+}
+
+<div class="card card-panel">
+    <div class="card-body">
+        <form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post">
+            @Html.AntiForgeryToken()
+            @if (Model.Id > 0)
+            {
+                <input type="hidden" asp-for="Id" />
+            }
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label asp-for="CompanyId" class="form-label">Company</label>
+                    <input type="text" class="form-control" value="@(ViewBag.CompanyName ?? Model.CompanyName ?? "Default Company")" disabled />
+                    <input type="hidden" asp-for="CompanyId" value="@(ViewBag.CompanyId ?? Model.CompanyId)" />
+                    <small class="text-muted">Company is read-only</small>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Status" class="form-label"></label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                    <span asp-validation-for="Status" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

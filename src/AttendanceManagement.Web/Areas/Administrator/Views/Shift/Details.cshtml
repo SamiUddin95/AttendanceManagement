@@ -1,0 +1,113 @@
+@model AttendanceManagement.Web.ViewModels.Shifts.ShiftViewModel
+@{
+    ViewData["Title"] = "Shift Details";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">Shift Details</h2>
+        <small class="text-muted">View shift configuration</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Company:</strong> @Model.CompanyName</p>
+                <p><strong>Name:</strong> @Model.Name</p>
+                <p><strong>Description:</strong> @Model.Description</p>
+                <p><strong>Status:</strong> @(Model.IsActive ? "Active" : "Inactive")</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="mb-3">Weekly Schedule</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Day Type</th>
+                        <th>Time Configuration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var day in Model.ShiftDays.OrderBy(d => d.DayOfWeek))
+                    {
+                        <tr>
+                            <td><strong>@day.DayName</strong></td>
+                            <td>
+                                @if (day.IsWorking)
+                                {
+                                    <span class="badge bg-success">Working</span>
+                                }
+                                else if (day.IsAlternate)
+                                {
+                                    <span class="badge bg-info">Alternate</span>
+                                }
+                                else if (day.IsHoliday)
+                                {
+                                    <span class="badge bg-danger">Holiday</span>
+                                }
+                                else if (day.IsOther)
+                                {
+                                    <span class="badge bg-warning">Other (@day.OtherHours hrs @day.OtherMinutes min)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Off</span>
+                                }
+                            </td>
+                            <td>
+                                @if (day.IsWorking)
+                                {
+                                    <div class="small">
+                                        <div>Start: @(day.StartTimeHours?.ToString("D2") ?? "00"):@(day.StartTimeMinutes?.ToString("D2") ?? "00")</div>
+                                        <div>Duration: @(day.DurationHours?.ToString("D2") ?? "00"):@(day.DurationMinutes?.ToString("D2") ?? "00")</div>
+                                        @if (day.LunchBreakHours.HasValue || day.LunchBreakMinutes.HasValue)
+                                        {
+                                            <div>Lunch: @(day.LunchBreakHours?.ToString("D2") ?? "00"):@(day.LunchBreakMinutes?.ToString("D2") ?? "00")</div>
+                                        }
+                                        @if (day.PrayerBreakHours.HasValue || day.PrayerBreakMinutes.HasValue)
+                                        {
+                                            <div>Prayer: @(day.PrayerBreakHours?.ToString("D2") ?? "00"):@(day.PrayerBreakMinutes?.ToString("D2") ?? "00")</div>
+                                        }
+                                        @if (day.TeaBreakHours.HasValue || day.TeaBreakMinutes.HasValue)
+                                        {
+                                            <div>Tea: @(day.TeaBreakHours?.ToString("D2") ?? "00"):@(day.TeaBreakMinutes?.ToString("D2") ?? "00")</div>
+                                        }
+                                        @if (day.FlexiInHours.HasValue || day.FlexiInMinutes.HasValue)
+                                        {
+                                            <div>Flexi In: @(day.FlexiInHours?.ToString("D2") ?? "00"):@(day.FlexiInMinutes?.ToString("D2") ?? "00")</div>
+                                        }
+                                        @if (day.FlexiOutHours.HasValue || day.FlexiOutMinutes.HasValue)
+                                        {
+                                            <div>Flexi Out: @(day.FlexiOutHours?.ToString("D2") ?? "00"):@(day.FlexiOutMinutes?.ToString("D2") ?? "00")</div>
+                                        }
+                                        @if (day.IsFlexible)
+                                        {
+                                            <div class="text-primary">Flexible</div>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2 mt-3">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+        <i class="bi bi-pencil me-2"></i>Edit
+    </a>
+</div>

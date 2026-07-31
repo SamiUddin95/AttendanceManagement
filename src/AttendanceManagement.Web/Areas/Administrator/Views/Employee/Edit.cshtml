@@ -1,0 +1,332 @@
+@model AttendanceManagement.Web.ViewModels.Employees.EmployeeViewModel
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Edit Employee" : "Create Employee";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit Employee" : "Create Employee")</h2>
+        <small class="text-muted">Manage employee information and details</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    @if (Model.Id > 0)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <div class="row g-4">
+        <!-- Left Column - Company & Personal Info -->
+        <div class="col-lg-8">
+            <!-- Company Information Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-building-gear me-2 text-primary"></i>Company Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="CompanyId" class="form-label fw-semibold">Company</label>
+                            <input type="text" class="form-control bg-light" value="@(ViewBag.CompanyName ?? Model.CompanyName ?? "Default Company")" disabled />
+                            <input type="hidden" asp-for="CompanyId" value="@(ViewBag.CompanyId ?? Model.CompanyId)" />
+                            <small class="text-muted">Company is read-only</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EmployeeType" class="form-label fw-semibold">Employee Type</label>
+                            <select asp-for="EmployeeType" asp-items="Model.EmployeeTypes" class="form-select"></select>
+                            <span asp-validation-for="EmployeeType" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DepartmentId" class="form-label fw-semibold">Department</label>
+                            <select asp-for="DepartmentId" asp-items="Model.Departments" class="form-select">
+                                <option value="">-- Select Department --</option>
+                            </select>
+                            <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CategoryId" class="form-label fw-semibold">Category</label>
+                            <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                                <option value="">-- Select Category --</option>
+                            </select>
+                            <span asp-validation-for="CategoryId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DesignationId" class="form-label fw-semibold">Designation</label>
+                            <select asp-for="DesignationId" asp-items="Model.Designations" class="form-select">
+                                <option value="">-- Select Designation --</option>
+                            </select>
+                            <span asp-validation-for="DesignationId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ShiftId" class="form-label fw-semibold">Shift</label>
+                            <select asp-for="ShiftId" asp-items="Model.Shifts" class="form-select">
+                                <option value="">-- Select Shift --</option>
+                            </select>
+                            <span asp-validation-for="ShiftId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="LeaveId" class="form-label fw-semibold">Leave</label>
+                            <select asp-for="LeaveId" asp-items="Model.Leaves" class="form-select">
+                                <option value="">-- Select Leave --</option>
+                            </select>
+                            <span asp-validation-for="LeaveId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EfficiencyRequired" class="form-label fw-semibold">Efficiency Required</label>
+                            <select asp-for="EfficiencyRequired" asp-items="Model.EfficiencyOptions" class="form-select">
+                                <option value="">-- Select Efficiency --</option>
+                            </select>
+                            <span asp-validation-for="EfficiencyRequired" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="JoiningDate" class="form-label fw-semibold">Joining Date</label>
+                            <input asp-for="JoiningDate" class="form-control" type="date" />
+                            <span asp-validation-for="JoiningDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="PeriodEndDate" class="form-label fw-semibold">Period End Date</label>
+                            <input asp-for="PeriodEndDate" class="form-control" type="date" />
+                            <span asp-validation-for="PeriodEndDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="ResignationDate" class="form-label fw-semibold">Resignation Date</label>
+                            <input asp-for="ResignationDate" class="form-control" type="date" />
+                            <span asp-validation-for="ResignationDate" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Information Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-person me-2 text-primary"></i>Personal Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="ImageBase64" class="form-label fw-semibold">Profile Image</label>
+                            <div class="image-upload-wrapper">
+                                <div class="image-preview" id="imagePreview">
+                                    @if (!string.IsNullOrEmpty(Model.ImageBase64))
+                                    {
+                                        <img src="data:image;base64,@Model.ImageBase64" class="preview-img" />
+                                    }
+                                    else
+                                    {
+                                        <div class="preview-placeholder">
+                                            <i class="bi bi-person-plus"></i>
+                                            <span>Upload Photo</span>
+                                        </div>
+                                    }
+                                </div>
+                                <input type="file" id="imageInput" class="form-control mt-2" accept="image/*" />
+                                <input type="hidden" asp-for="ImageBase64" id="imageBase64" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="EmployeeNo" class="form-label fw-semibold">Employee No</label>
+                            <input asp-for="EmployeeNo" class="form-control" />
+                            <span asp-validation-for="EmployeeNo" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="CardNo" class="form-label fw-semibold">Card No</label>
+                            <input asp-for="CardNo" class="form-control" />
+                            <span asp-validation-for="CardNo" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Name" class="form-label fw-semibold">Full Name</label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="FatherSpouseName" class="form-label fw-semibold">Father/Spouse Name</label>
+                            <input asp-for="FatherSpouseName" class="form-control" />
+                            <span asp-validation-for="FatherSpouseName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Channel" class="form-label fw-semibold">Channel</label>
+                            <input asp-for="Channel" class="form-control" />
+                            <span asp-validation-for="Channel" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="BloodGroup" class="form-label fw-semibold">Blood Group</label>
+                            <select asp-for="BloodGroup" asp-items="Model.BloodGroups" class="form-select">
+                                <option value="">-- Select Blood Group --</option>
+                            </select>
+                            <span asp-validation-for="BloodGroup" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-12">
+                            <label asp-for="Address" class="form-label fw-semibold">Address</label>
+                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Phone" class="form-label fw-semibold">Phone</label>
+                            <input asp-for="Phone" class="form-control" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Cell" class="form-label fw-semibold">Cell</label>
+                            <input asp-for="Cell" class="form-control" />
+                            <span asp-validation-for="Cell" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                            <input asp-for="Email" class="form-control" type="email" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Password" class="form-label fw-semibold">Password</label>
+                            <input asp-for="Password" class="form-control" type="password" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Gender" class="form-label fw-semibold">Gender</label>
+                            <select asp-for="Gender" asp-items="Model.Genders" class="form-select">
+                                <option value="">-- Select Gender --</option>
+                            </select>
+                            <span asp-validation-for="Gender" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DateOfBirth" class="form-label fw-semibold">Date of Birth</label>
+                            <input asp-for="DateOfBirth" class="form-control" type="date" />
+                            <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CNIC" class="form-label fw-semibold">CNIC/Security</label>
+                            <input asp-for="CNIC" class="form-control" />
+                            <span asp-validation-for="CNIC" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Incharge & Status -->
+        <div class="col-lg-4">
+            <!-- Incharge Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-person-workspace me-2 text-primary"></i>Incharge</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="InchargeCategoryId" class="form-label fw-semibold">Category</label>
+                        <select asp-for="InchargeCategoryId" asp-items="Model.InchargeCategories" class="form-select">
+                            <option value="">-- Select Category --</option>
+                        </select>
+                        <span asp-validation-for="InchargeCategoryId" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="InchargeDesignationId" class="form-label fw-semibold">Designation</label>
+                        <select asp-for="InchargeDesignationId" asp-items="Model.InchargeDesignations" class="form-select">
+                            <option value="">-- Select Designation --</option>
+                        </select>
+                        <span asp-validation-for="InchargeDesignationId" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="InchargeEmployeeId" class="form-label fw-semibold">Employee</label>
+                        <select asp-for="InchargeEmployeeId" asp-items="Model.InchargeEmployees" class="form-select">
+                            <option value="">-- Select Employee --</option>
+                        </select>
+                        <span asp-validation-for="InchargeEmployeeId" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-gear me-2 text-primary"></i>Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" asp-for="OverTimeEntitled" />
+                            <label class="form-check-label fw-semibold">Over Time Entitled</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" asp-for="IsActive" />
+                            <label class="form-check-label fw-semibold">Active Status</label>
+                        </div>
+                    </div>
+                    <small class="text-muted">Only active employees will be available for attendance tracking.</small>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-x-lg me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-check-lg me-2"></i>Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<style>
+    .image-upload-wrapper {
+        position: relative;
+    }
+    .image-preview {
+        width: 120px;
+        height: 120px;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #f8f9fa;
+    }
+    .image-preview .preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .image-preview .preview-placeholder {
+        text-align: center;
+        color: #6c757d;
+    }
+    .image-preview .preview-placeholder i {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    .image-preview .preview-placeholder span {
+        font-size: 0.75rem;
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('imageBase64').value = event.target.result.split(',')[1];
+                    const preview = document.getElementById('imagePreview');
+                    preview.innerHTML = '<img src="' + event.target.result + '" class="preview-img" />';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+}

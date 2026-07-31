@@ -1,0 +1,260 @@
+@model AttendanceManagement.Web.ViewModels.Shifts.ShiftListViewModel
+@{
+    ViewData["Title"] = "Shift Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">Shift Management</h2>
+        <small class="text-muted">Manage shift schedules and configurations</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Add New Shift
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Search by shift name, company, description..." />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Shift</th>
+                        <th>Company</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Shifts != null && Model.Shifts.Any())
+                    {
+                        @foreach (var shift in Model.Shifts)
+                        {
+                            <tr data-id="@shift.Id">
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="shift-icon me-3">
+                                            <i class="bi bi-clock"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@shift.Name</div>
+                                            <small class="text-muted">ID: @shift.Id</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-building text-muted small"></i>
+                                        <span>@shift.CompanyName</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-muted small">@shift.Description</span>
+                                </td>
+                                <td>
+                                    @if (shift.IsActive)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check-circle me-1"></i>Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                            <i class="bi bi-circle me-1"></i>Inactive
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <a asp-action="Details" asp-route-id="@shift.Id" class="btn btn-sm btn-outline-info" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@shift.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete" data-id="@shift.Id" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    <p class="mb-0">No shifts found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer bg-white border-top-0">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        @if (Model.CurrentPage > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)" asp-route-search="@Model.Search">Previous</a>
+                            </li>
+                        }
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-search="@Model.Search">@i</a>
+                            </li>
+                        }
+                        @if (Model.CurrentPage < Model.TotalPages)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)" asp-route-search="@Model.Search">Next</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .shift-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+    }
+
+    .badge {
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+    }
+</style>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this shift?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="deleteConfirmBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+        let deleteId = null;
+
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', function() {
+                deleteId = this.dataset.id;
+                deleteModal.show();
+            });
+        });
+
+        deleteConfirmBtn.addEventListener('click', async function() {
+            if (!deleteId) return;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', token);
+
+            try {
+                const response = await fetch('/Administrator/Shift/Delete?id=' + deleteId, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Failed to delete shift');
+                    }
+                } else {
+                    alert('Error deleting shift');
+                }
+            } catch (err) {
+                alert('Error: ' + err);
+            }
+
+            deleteModal.hide();
+        });
+
+        document.querySelectorAll('.status-toggle').forEach(toggle => {
+            toggle.addEventListener('change', async function() {
+                const id = this.dataset.id;
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', token);
+
+                try {
+                    const response = await fetch('/Administrator/Shift/ToggleStatus?id=' + id, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (!data.success) {
+                            this.checked = !this.checked;
+                            alert('Failed to update status');
+                        }
+                    } else {
+                        this.checked = !this.checked;
+                        alert('Error updating status');
+                    }
+                } catch (err) {
+                    this.checked = !this.checked;
+                    alert('Error: ' + err);
+                }
+            });
+        });
+    </script>
+}

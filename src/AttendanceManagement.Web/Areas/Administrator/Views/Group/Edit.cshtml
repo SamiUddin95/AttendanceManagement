@@ -1,0 +1,301 @@
+@model AttendanceManagement.Web.ViewModels.Groups.GroupViewModel
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Edit Group" : "Create Group";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit Group" : "Create Group")</h2>
+        <small class="text-muted">Configure group settings and employee filters</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post">
+    @Html.AntiForgeryToken()
+    @if (Model.Id > 0)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <div class="row g-4">
+        <!-- Left Column - Basic Info & Filters -->
+        <div class="col-lg-8">
+            <!-- Basic Information Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2 text-primary"></i>Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="CompanyId" class="form-label fw-semibold">Company</label>
+                            <input type="text" class="form-control bg-light" value="@Model.CompanyName" disabled />
+                            <input type="hidden" asp-for="CompanyId" />
+                            <small class="text-muted">Company is read-only</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Code" class="form-label fw-semibold">Group Code</label>
+                            <input asp-for="Code" class="form-control" required maxlength="50" placeholder="e.g., GRP001" />
+                            <span asp-validation-for="Code" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Name" class="form-label fw-semibold">Group Name</label>
+                            <input asp-for="Name" class="form-control" required maxlength="150" placeholder="e.g., Head Office Staff" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="3" maxlength="500" placeholder="Brief description of this group..."></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Filters Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Employee Filters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="EmploymentType" class="form-label fw-semibold">Employment Type</label>
+                            <select asp-for="EmploymentType" class="form-select">
+                                <option value="">-- Select Employment Type --</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Probation">Probation</option>
+                                <option value="Permanent">Permanent</option>
+                            </select>
+                            <span asp-validation-for="EmploymentType" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Gender" class="form-label fw-semibold">Gender</label>
+                            <select asp-for="Gender" class="form-select">
+                                <option value="">-- Select Gender --</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                            <span asp-validation-for="Gender" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Range Filters Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-calendar-range me-2 text-primary"></i>Date Range Filters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Joining Date Range</label>
+                            <div class="input-group">
+                                <input asp-for="JoiningDateFrom" type="date" class="form-control" />
+                                <span class="input-group-text bg-light">to</span>
+                                <input asp-for="JoiningDateTo" type="date" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Period End Date Range</label>
+                            <div class="input-group">
+                                <input asp-for="PeriodEndDateFrom" type="date" class="form-control" />
+                                <span class="input-group-text bg-light">to</span>
+                                <input asp-for="PeriodEndDateTo" type="date" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Resignation Date Range</label>
+                            <div class="input-group">
+                                <input asp-for="ResignationDateFrom" type="date" class="form-control" />
+                                <span class="input-group-text bg-light">to</span>
+                                <input asp-for="ResignationDateTo" type="date" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date of Birth Range</label>
+                            <div class="input-group">
+                                <input asp-for="DateOfBirthFrom" type="date" class="form-control" />
+                                <span class="input-group-text bg-light">to</span>
+                                <input asp-for="DateOfBirthTo" type="date" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Multi-Select Filters & Status -->
+        <div class="col-lg-4">
+            <!-- Multi-Select Filters Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-check2-square me-2 text-primary"></i>Multi-Select Filters</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Department Filter -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-semibold mb-0">Filter by Department</label>
+                            <div class="form-check form-switch mb-0">
+                                <input type="checkbox" class="form-check-input" asp-for="FilterByDepartment" id="filterByDept" />
+                            </div>
+                        </div>
+                        <div class="multi-select-container @(Model.FilterByDepartment ? "" : "d-none")" id="deptContainer">
+                            <div class="border rounded p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                                @foreach (var dept in Model.AvailableDepartments)
+                                {
+                                    <div class="form-check mb-2">
+                                        <input type="checkbox" class="form-check-input" name="SelectedDepartmentIds" value="@dept.Id" id="dept_@dept.Id" @(dept.IsSelected ? "checked" : "") />
+                                        <label class="form-check-label" for="dept_@dept.Id">@dept.Name</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Designation Filter -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-semibold mb-0">Filter by Designation</label>
+                            <div class="form-check form-switch mb-0">
+                                <input type="checkbox" class="form-check-input" asp-for="FilterByDesignation" id="filterByDesig" />
+                            </div>
+                        </div>
+                        <div class="multi-select-container @(Model.FilterByDesignation ? "" : "d-none")" id="desigContainer">
+                            <div class="border rounded p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                                @foreach (var desig in Model.AvailableDesignations)
+                                {
+                                    <div class="form-check mb-2">
+                                        <input type="checkbox" class="form-check-input" name="SelectedDesignationIds" value="@desig.Id" id="desig_@desig.Id" @(desig.IsSelected ? "checked" : "") />
+                                        <label class="form-check-label" for="desig_@desig.Id">@desig.Name</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Filter -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-semibold mb-0">Filter by Location</label>
+                            <div class="form-check form-switch mb-0">
+                                <input type="checkbox" class="form-check-input" asp-for="FilterByLocation" id="filterByLoc" />
+                            </div>
+                        </div>
+                        <div class="multi-select-container @(Model.FilterByLocation ? "" : "d-none")" id="locContainer">
+                            <div class="border rounded p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                                @foreach (var loc in Model.AvailableLocations)
+                                {
+                                    <div class="form-check mb-2">
+                                        <input type="checkbox" class="form-check-input" name="SelectedLocationIds" value="@loc.Id" id="loc_@loc.Id" @(loc.IsSelected ? "checked" : "") />
+                                        <label class="form-check-label" for="loc_@loc.Id">@loc.Name</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Incharge Filter -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-semibold mb-0">Filter by Incharge</label>
+                            <div class="form-check form-switch mb-0">
+                                <input type="checkbox" class="form-check-input" asp-for="FilterByIncharge" id="filterByIncharge" />
+                            </div>
+                        </div>
+                        <div class="multi-select-container @(Model.FilterByIncharge ? "" : "d-none")" id="inchargeContainer">
+                            <div class="border rounded p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                                @foreach (var incharge in Model.AvailableIncharges)
+                                {
+                                    <div class="form-check mb-2">
+                                        <input type="checkbox" class="form-check-input" name="SelectedInchargeIds" value="@incharge.Id" id="incharge_@incharge.Id" @(incharge.IsSelected ? "checked" : "") />
+                                        <label class="form-check-label" for="incharge_@incharge.Id">
+                                            @incharge.Name <small class="text-muted">(@incharge.EmployeeNo)</small>
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-gear me-2 text-primary"></i>Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" asp-for="IsActive" />
+                        <label class="form-check-label fw-semibold">Active Group</label>
+                    </div>
+                    <small class="text-muted">Only active groups will be available for employee assignment.</small>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-x-lg me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-check-lg me-2"></i>@(Model.Id > 0 ? "Update" : "Create")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle multi-select containers based on filter checkboxes
+            const filterByDept = document.getElementById('filterByDept');
+            const deptContainer = document.getElementById('deptContainer');
+            
+            const filterByDesig = document.getElementById('filterByDesig');
+            const desigContainer = document.getElementById('desigContainer');
+            
+            const filterByLoc = document.getElementById('filterByLoc');
+            const locContainer = document.getElementById('locContainer');
+            
+            const filterByIncharge = document.getElementById('filterByIncharge');
+            const inchargeContainer = document.getElementById('inchargeContainer');
+
+            if (filterByDept) {
+                filterByDept.addEventListener('change', function() {
+                    deptContainer.classList.toggle('d-none', !this.checked);
+                });
+            }
+
+            if (filterByDesig) {
+                filterByDesig.addEventListener('change', function() {
+                    desigContainer.classList.toggle('d-none', !this.checked);
+                });
+            }
+
+            if (filterByLoc) {
+                filterByLoc.addEventListener('change', function() {
+                    locContainer.classList.toggle('d-none', !this.checked);
+                });
+            }
+
+            if (filterByIncharge) {
+                filterByIncharge.addEventListener('change', function() {
+                    inchargeContainer.classList.toggle('d-none', !this.checked);
+                });
+            }
+        });
+    </script>
+}

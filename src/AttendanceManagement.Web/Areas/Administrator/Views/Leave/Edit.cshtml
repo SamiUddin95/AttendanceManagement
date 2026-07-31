@@ -1,0 +1,100 @@
+@model AttendanceManagement.Web.ViewModels.Leaves.LeaveViewModel
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Edit Leave" : "Create Leave";
+}
+
+<div class="card card-panel">
+    <div class="card-body">
+        <form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post">
+            @Html.AntiForgeryToken()
+            @if (Model.Id > 0)
+            {
+                <input type="hidden" asp-for="Id" />
+            }
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CompanyId" class="form-label">Company</label>
+                    <input type="text" class="form-control" value="@(ViewBag.CompanyName ?? Model.CompanyName ?? "Default Company")" disabled />
+                    <input type="hidden" asp-for="CompanyId" value="@(ViewBag.CompanyId ?? Model.CompanyId)" />
+                    <small class="text-muted">Company is read-only</small>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CategoryId" class="form-label">Category</label>
+                    <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                        <option value="">-- Select Category --</option>
+                    </select>
+                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="LeavePolicyId" class="form-label">Leave Policy</label>
+                    <select asp-for="LeavePolicyId" asp-items="Model.LeavePolicies" class="form-select">
+                        <option value="">-- Select Leave Policy --</option>
+                    </select>
+                    <span asp-validation-for="LeavePolicyId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="IsActive" class="form-label mb-0"></label>
+                    <label class="toggle-switch">
+                        <input asp-for="IsActive" />
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="col-md-12">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+
+            <h6 class="mt-4 mb-3">Leave Details</h6>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%;">Leave Type</th>
+                            <th style="width: 25%;">No of Days</th>
+                            <th style="width: 25%;">Carry Forward</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.LeaveDetails.Count; i++)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="hidden" asp-for="@Model.LeaveDetails[i].Id" />
+                                    <input asp-for="@Model.LeaveDetails[i].LeaveType" class="form-control" />
+                                </td>
+                                <td>
+                                    <select asp-for="@Model.LeaveDetails[i].NoOfDays" class="form-select">
+                                        @for (int days = 0; days <= 365; days++)
+                                        {
+                                            <option value="@days">@days</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" asp-for="@Model.LeaveDetails[i].CarryForward" />
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

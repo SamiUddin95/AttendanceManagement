@@ -1,0 +1,3 @@
+﻿dotnet ef migrations add AddLeaveTables --project d:\Personal\AttendanceManagement\Project\src\AttendanceManagement.Infrastructure --startup-project d:\Personal\AttendanceManagement\Project\src\AttendanceManagement.Web
+
+dotnet ef database update --project d:\Personal\AttendanceManagement\Project\src\AttendanceManagement.Infrastructure --startup-project d:\Personal\AttendanceManagement\Project\src\AttendanceManagement.Web

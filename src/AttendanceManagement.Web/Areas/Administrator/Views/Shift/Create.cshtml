@@ -1,0 +1,539 @@
+@model AttendanceManagement.Web.ViewModels.Shifts.ShiftViewModel
+@{
+    ViewData["Title"] = "Create Shift";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">Create Shift</h2>
+        <small class="text-muted">Configure shift schedule and timing</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="CompanyId" class="form-label">Company</label>
+                        <input type="text" class="form-control" value="@(ViewBag.CompanyName ?? "Default Company")" disabled />
+                        <input type="hidden" asp-for="CompanyId" value="@(ViewBag.CompanyId ?? Guid.Empty)" />
+                        <small class="text-muted">Company is read-only</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label">Shift Name</label>
+                        <input asp-for="Name" class="form-control" required maxlength="150" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Description" class="form-label">Description</label>
+                <textarea asp-for="Description" class="form-control" rows="3" maxlength="500"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="mb-4">
+                <div class="form-check form-switch">
+                    <input type="checkbox" class="form-check-input" asp-for="IsActive" checked />
+                    <label class="form-check-label">Active</label>
+                </div>
+            </div>
+
+            <h5 class="mb-3">Weekly Schedule</h5>
+            
+            <ul class="nav nav-tabs mb-3" id="dayTabs" role="tablist">
+                @for (int i = 0; i < Model.ShiftDays.Count; i++)
+                {
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(i == 0 ? "active" : "")" id="day-@i-tab" data-bs-toggle="tab" data-bs-target="#day-@i" type="button" role="tab">
+                            @Model.ShiftDays[i].DayName
+                        </button>
+                    </li>
+                }
+            </ul>
+            
+            <div class="tab-content" id="dayTabsContent">
+                @for (int i = 0; i < Model.ShiftDays.Count; i++)
+                {
+                    <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="day-@i" role="tabpanel" data-day-index="@i">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">@Model.ShiftDays[i].DayName Configuration</h6>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Day Type</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" class="form-check-input day-type-checkbox" 
+                                                   asp-for="@Model.ShiftDays[i].IsWorking" 
+                                                   data-day-index="@i" data-type="working" />
+                                            <label class="form-check-label">Working</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" class="form-check-input day-type-checkbox" 
+                                                   asp-for="@Model.ShiftDays[i].IsAlternate" 
+                                                   data-day-index="@i" data-type="alternate" />
+                                            <label class="form-check-label">Alternate</label>
+                                        </div>
+                                        @if (Model.ShiftDays[i].DayOfWeek == 0)
+                                        {
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input day-type-checkbox" 
+                                                       asp-for="@Model.ShiftDays[i].IsSunday" 
+                                                       data-day-index="@i" data-type="sunday" />
+                                                <label class="form-check-label">Sunday</label>
+                                            </div>
+                                        }
+                                        @if (Model.ShiftDays[i].DayOfWeek != 0)
+                                        {
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input day-type-checkbox" 
+                                                       asp-for="@Model.ShiftDays[i].IsHoliday" 
+                                                       data-day-index="@i" data-type="holiday" />
+                                                <label class="form-check-label">Holiday</label>
+                                            </div>
+                                        }
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" class="form-check-input day-type-checkbox other-checkbox" 
+                                                   asp-for="@Model.ShiftDays[i].IsOther" 
+                                                   data-day-index="@i" data-type="other" />
+                                            <label class="form-check-label">Other</label>
+                                        </div>
+                                    </div>
+                                    <div class="other-time-config d-inline-flex gap-2 mt-2 @(Model.ShiftDays[i].IsOther ? "" : "d-none")" data-day-index="@i">
+                                        <input type="number" class="form-control form-control-sm" style="width: 60px;" 
+                                               asp-for="@Model.ShiftDays[i].OtherHours" min="0" max="23" placeholder="HH" />
+                                        <span class="align-self-center">:</span>
+                                        <input type="number" class="form-control form-control-sm" style="width: 60px;" 
+                                               asp-for="@Model.ShiftDays[i].OtherMinutes" min="0" max="59" placeholder="MM" />
+                                    </div>
+                                    <input type="hidden" asp-for="@Model.ShiftDays[i].DayOfWeek" />
+                                    <input type="hidden" asp-for="@Model.ShiftDays[i].Id" />
+                                </div>
+
+                                <div class="time-config @(Model.ShiftDays[i].IsWorking ? "" : "d-none")" id="time-config-@i" data-day-index="@i">
+                                    <label class="form-label fw-bold mb-3">Time Configuration</label>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label small fw-semibold mb-0">Start Time</label>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].StartTimeHours" style="width: 80px;">
+                                                        @for (int h = 0; h < 24; h++)
+                                                        {
+                                                            <option value="@h">@h.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Hours</small>
+                                                <span class="text-muted fw-bold">:</span>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].StartTimeMinutes" style="width: 80px;">
+                                                        @for (int m = 0; m < 60; m++)
+                                                        {
+                                                            <option value="@m">@m.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Minutes</small>
+                                                @if (Model.ShiftDays[i].DayOfWeek != 0)
+                                                {
+                                                    <div class="form-check ms-3">
+                                                        <input type="checkbox" class="form-check-input" asp-for="@Model.ShiftDays[i].IsFlexible" />
+                                                        <label class="form-check-label">Flexible</label>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label small fw-semibold mb-0">Duration</label>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].DurationHours" style="width: 80px;">
+                                                        @for (int h = 0; h < 24; h++)
+                                                        {
+                                                            <option value="@h">@h.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Hours</small>
+                                                <span class="text-muted fw-bold">:</span>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].DurationMinutes" style="width: 80px;">
+                                                        @for (int m = 0; m < 60; m++)
+                                                        {
+                                                            <option value="@m">@m.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Minutes</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label small fw-semibold mb-0">Lunch Break</label>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].LunchBreakHours" style="width: 80px;">
+                                                        @for (int h = 0; h < 24; h++)
+                                                        {
+                                                            <option value="@h">@h.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Hours</small>
+                                                <span class="text-muted fw-bold">:</span>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].LunchBreakMinutes" style="width: 80px;">
+                                                        @for (int m = 0; m < 60; m++)
+                                                        {
+                                                            <option value="@m">@m.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Minutes</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label small fw-semibold mb-0">Prayer Break</label>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].PrayerBreakHours" style="width: 80px;">
+                                                        @for (int h = 0; h < 24; h++)
+                                                        {
+                                                            <option value="@h">@h.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Hours</small>
+                                                <span class="text-muted fw-bold">:</span>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].PrayerBreakMinutes" style="width: 80px;">
+                                                        @for (int m = 0; m < 60; m++)
+                                                        {
+                                                            <option value="@m">@m.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Minutes</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label small fw-semibold mb-0">Tea Break</label>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].TeaBreakHours" style="width: 80px;">
+                                                        @for (int h = 0; h < 24; h++)
+                                                        {
+                                                            <option value="@h">@h.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Hours</small>
+                                                <span class="text-muted fw-bold">:</span>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].TeaBreakMinutes" style="width: 80px;">
+                                                        @for (int m = 0; m < 60; m++)
+                                                        {
+                                                            <option value="@m">@m.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Minutes</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label small fw-semibold mb-0">Flexi In</label>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].FlexiInHours" style="width: 80px;">
+                                                        @for (int h = 0; h < 24; h++)
+                                                        {
+                                                            <option value="@h">@h.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Hours</small>
+                                                <span class="text-muted fw-bold">:</span>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].FlexiInMinutes" style="width: 80px;">
+                                                        @for (int m = 0; m < 60; m++)
+                                                        {
+                                                            <option value="@m">@m.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Minutes</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label small fw-semibold mb-0">Flexi Out</label>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].FlexiOutHours" style="width: 80px;">
+                                                        @for (int h = 0; h < 24; h++)
+                                                        {
+                                                            <option value="@h">@h.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Hours</small>
+                                                <span class="text-muted fw-bold">:</span>
+                                                <div>
+                                                    <select class="form-select form-select-sm" asp-for="@Model.ShiftDays[i].FlexiOutMinutes" style="width: 80px;">
+                                                        @for (int m = 0; m < 60; m++)
+                                                        {
+                                                            <option value="@m">@m.ToString("D2")</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <small class="text-muted mb-0">Minutes</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (i > 0)
+                                {
+                                    <div class="mt-4 pt-3 border-top">
+                                        <label class="form-label fw-bold">Copy from Previous Day</label>
+                                        <div class="form-check form-check-inline">
+                                            <input type="checkbox" class="form-check-input copy-checkbox" 
+                                                   asp-for="@Model.ShiftDays[i].CopyFromPrevious" 
+                                                   data-day-index="@i" />
+                                            <label class="form-check-label">Enable Copy</label>
+                                        </div>
+                                        <div class="copy-options d-none mt-2" data-day-index="@i">
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input copy-day-type" 
+                                                       data-day-index="@i" data-copy-type="working" />
+                                                <label class="form-check-label">Working</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input copy-day-type" 
+                                                       data-day-index="@i" data-copy-type="alternate" />
+                                                <label class="form-check-label">Alternate</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input copy-day-type" 
+                                                       data-day-index="@i" data-copy-type="holiday" />
+                                                <label class="form-check-label">Holiday</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input copy-time" 
+                                                       data-day-index="@i" />
+                                                <label class="form-check-label">Time</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input copy-flexible" 
+                                                       data-day-index="@i" />
+                                                <label class="form-check-label">Flexible</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Shift</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, checkboxes found:', document.querySelectorAll('.day-type-checkbox').length);
+            
+            // Handle day type checkboxes
+            var checkboxes = document.querySelectorAll('.day-type-checkbox');
+            for (var i = 0; i < checkboxes.length; i++) {
+                var checkbox = checkboxes[i];
+                console.log('Attaching listener to checkbox with dayIndex:', checkbox.dataset.dayIndex);
+                checkbox.addEventListener('change', function() {
+                    console.log('Checkbox changed', this.checked, this.dataset.type);
+                    var dayIndex = this.dataset.dayIndex;
+                    var tabPane = this.closest('.tab-pane');
+                    console.log('tabPane:', tabPane, 'dayIndex:', dayIndex);
+                    
+                    // Uncheck other day type checkboxes
+                    if (this.checked) {
+                        var otherCheckboxes = tabPane.querySelectorAll('.day-type-checkbox');
+                        for (var j = 0; j < otherCheckboxes.length; j++) {
+                            if (otherCheckboxes[j] !== this) {
+                                otherCheckboxes[j].checked = false;
+                            }
+                        }
+                    }
+                    
+                    // Show/hide time config based on working
+                    var timeConfig = tabPane.querySelector('.time-config');
+                    var isWorking = tabPane.querySelector('[data-type="working"]').checked;
+                    console.log('timeConfig:', timeConfig, 'isWorking:', isWorking);
+                    if (timeConfig) {
+                        if (isWorking) {
+                            timeConfig.classList.remove('d-none');
+                            console.log('Removed d-none class from time-config');
+                        } else {
+                            timeConfig.classList.add('d-none');
+                            console.log('Added d-none class to time-config');
+                        }
+                    }
+                    
+                    // Show/hide other time config
+                    var otherConfig = tabPane.querySelector('.other-time-config');
+                    var isOther = tabPane.querySelector('[data-type="other"]').checked;
+                    if (otherConfig) {
+                        if (isOther) {
+                            otherConfig.style.display = 'flex';
+                        } else {
+                            otherConfig.style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            // Handle copy from previous
+            var copyCheckboxes = document.querySelectorAll('.copy-checkbox');
+            console.log('Found copy-checkbox elements:', copyCheckboxes.length);
+            for (var k = 0; k < copyCheckboxes.length; k++) {
+                console.log('Attaching listener to copy-checkbox:', copyCheckboxes[k].dataset.dayIndex);
+                copyCheckboxes[k].addEventListener('change', function() {
+                    console.log('Copy checkbox changed:', this.checked, 'dayIndex:', this.dataset.dayIndex);
+                    var dayIndex = this.dataset.dayIndex;
+                    var copyOptions = document.querySelector('.copy-options[data-day-index="' + dayIndex + '"]');
+                    if (copyOptions) {
+                        copyOptions.classList.toggle('d-none', !this.checked);
+                    }
+                });
+            }
+
+            // Handle copy day type checkboxes
+            var copyDayTypeCheckboxes = document.querySelectorAll('.copy-day-type');
+            console.log('Found copy-day-type checkboxes:', copyDayTypeCheckboxes.length);
+            for (var l = 0; l < copyDayTypeCheckboxes.length; l++) {
+                console.log('Attaching listener to copy-day-type checkbox:', copyDayTypeCheckboxes[l].dataset.dayIndex, copyDayTypeCheckboxes[l].dataset.copyType);
+                copyDayTypeCheckboxes[l].addEventListener('change', function() {
+                    console.log('Copy day type checkbox changed:', this.checked, 'dayIndex:', this.dataset.dayIndex, 'copyType:', this.dataset.copyType);
+                    var dayIndex = parseInt(this.dataset.dayIndex);
+                    var copyType = this.dataset.copyType;
+                    var prevDayIndex = dayIndex - 1;
+
+                    if (this.checked && prevDayIndex >= 0) {
+                        var currentTabPane = document.querySelector('.tab-pane[data-day-index="' + dayIndex + '"]');
+                        var prevTabPane = document.querySelector('.tab-pane[data-day-index="' + prevDayIndex + '"]');
+                        console.log('currentTabPane:', currentTabPane, 'prevTabPane:', prevTabPane);
+
+                        if (currentTabPane && prevTabPane) {
+                            var prevCheckbox = prevTabPane.querySelector('[data-type="' + copyType + '"]');
+                            var currentCheckbox = currentTabPane.querySelector('[data-type="' + copyType + '"]');
+                            console.log('prevCheckbox:', prevCheckbox, 'currentCheckbox:', currentCheckbox, 'prevCheckbox.checked:', prevCheckbox ? prevCheckbox.checked : 'N/A');
+
+                            if (prevCheckbox && currentCheckbox) {
+                                currentCheckbox.checked = prevCheckbox.checked;
+                                if (currentCheckbox.checked) {
+                                    var otherCheckboxes = currentTabPane.querySelectorAll('.day-type-checkbox');
+                                    for (var m = 0; m < otherCheckboxes.length; m++) {
+                                        if (otherCheckboxes[m] !== currentCheckbox) {
+                                            otherCheckboxes[m].checked = false;
+                                        }
+                                    }
+                                }
+                                currentCheckbox.dispatchEvent(new Event('change'));
+
+                                // If copying Working, also copy time values
+                                if (copyType === 'working' && prevCheckbox.checked) {
+                                    console.log('Copying time values for Working');
+                                    var timeFields = ['StartTimeHours', 'StartTimeMinutes', 'DurationHours', 'DurationMinutes', 
+                                                    'LunchBreakHours', 'LunchBreakMinutes', 'PrayerBreakHours', 'PrayerBreakMinutes',
+                                                    'TeaBreakHours', 'TeaBreakMinutes', 'FlexiInHours', 'FlexiInMinutes',
+                                                    'FlexiOutHours', 'FlexiOutMinutes'];
+
+                                    for (var p = 0; p < timeFields.length; p++) {
+                                        var fieldName = timeFields[p];
+                                        var prevSelect = prevTabPane.querySelector('[name$="ShiftDays[' + prevDayIndex + '].' + fieldName + '"]');
+                                        var currentSelect = currentTabPane.querySelector('[name$="ShiftDays[' + dayIndex + '].' + fieldName + '"]');
+
+                                        if (prevSelect && currentSelect) {
+                                            currentSelect.value = prevSelect.value;
+                                            console.log('Copied', fieldName, 'from', prevSelect.value, 'to', currentSelect.value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Handle copy time checkbox
+            var copyTimeCheckboxes = document.querySelectorAll('.copy-time');
+            for (var n = 0; n < copyTimeCheckboxes.length; n++) {
+                copyTimeCheckboxes[n].addEventListener('change', function() {
+                    var dayIndex = parseInt(this.dataset.dayIndex);
+                    var prevDayIndex = dayIndex - 1;
+
+                    if (this.checked && prevDayIndex >= 0) {
+                        var currentTabPane = document.querySelector('.tab-pane[data-day-index="' + dayIndex + '"]');
+                        var prevTabPane = document.querySelector('.tab-pane[data-day-index="' + prevDayIndex + '"]');
+
+                        if (currentTabPane && prevTabPane) {
+                            var timeFields = ['StartTimeHours', 'StartTimeMinutes', 'DurationHours', 'DurationMinutes', 
+                                            'LunchBreakHours', 'LunchBreakMinutes', 'PrayerBreakHours', 'PrayerBreakMinutes',
+                                            'TeaBreakHours', 'TeaBreakMinutes', 'FlexiInHours', 'FlexiInMinutes',
+                                            'FlexiOutHours', 'FlexiOutMinutes'];
+
+                            for (var p = 0; p < timeFields.length; p++) {
+                                var fieldName = timeFields[p];
+                                var prevSelect = prevTabPane.querySelector('[name$="ShiftDays[' + prevDayIndex + '].' + fieldName + '"]');
+                                var currentSelect = currentTabPane.querySelector('[name$="ShiftDays[' + dayIndex + '].' + fieldName + '"]');
+
+                                if (prevSelect && currentSelect) {
+                                    currentSelect.value = prevSelect.value;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Handle copy flexible checkbox
+            var copyFlexibleCheckboxes = document.querySelectorAll('.copy-flexible');
+            for (var q = 0; q < copyFlexibleCheckboxes.length; q++) {
+                copyFlexibleCheckboxes[q].addEventListener('change', function() {
+                    var dayIndex = parseInt(this.dataset.dayIndex);
+                    var prevDayIndex = dayIndex - 1;
+
+                    if (this.checked && prevDayIndex >= 0) {
+                        var currentTabPane = document.querySelector('.tab-pane[data-day-index="' + dayIndex + '"]');
+                        var prevTabPane = document.querySelector('.tab-pane[data-day-index="' + prevDayIndex + '"]');
+
+                        if (currentTabPane && prevTabPane) {
+                            var prevCheckbox = prevTabPane.querySelector('[name$="ShiftDays[' + prevDayIndex + '].IsFlexible"]');
+                            var currentCheckbox = currentTabPane.querySelector('[name$="ShiftDays[' + dayIndex + '].IsFlexible"]');
+
+                            if (prevCheckbox && currentCheckbox) {
+                                currentCheckbox.checked = prevCheckbox.checked;
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

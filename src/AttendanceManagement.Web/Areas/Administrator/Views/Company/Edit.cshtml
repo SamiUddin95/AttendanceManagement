@@ -1,0 +1,79 @@
+@model AttendanceManagement.Web.ViewModels.Companies.CompanyFormViewModel
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Edit Company" : "Create Company";
+}
+
+<div class="card card-panel">
+    <div class="card-body">
+        <form asp-action="@(Model.Id.HasValue ? "Edit" : "Create")" method="post">
+            @Html.AntiForgeryToken()
+            @if (Model.Id.HasValue)
+            {
+                <input type="hidden" asp-for="Id" />
+            }
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="PhoneNumber" class="form-label"></label>
+                    <input asp-for="PhoneNumber" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="FaxNumber" class="form-label"></label>
+                    <input asp-for="FaxNumber" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="NumberOfEmployees" class="form-label"></label>
+                    <input asp-for="NumberOfEmployees" class="form-control" />
+                </div>
+                <div class="col-md-9">
+                    <label asp-for="Domain" class="form-label"></label>
+                    <input asp-for="Domain" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="AddressLine1" class="form-label"></label>
+                    <input asp-for="AddressLine1" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="AddressLine2" class="form-label"></label>
+                    <input asp-for="AddressLine2" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CountryId" class="form-label"></label>
+                    <select asp-for="CountryId" asp-items="Model.Countries" class="form-select"></select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="CityId" class="form-label"></label>
+                    <select asp-for="CityId" asp-items="Model.Cities" class="form-select"></select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="AdminUserId" class="form-label"></label>
+                    <input asp-for="AdminUserId" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="AdminPassword" class="form-label"></label>
+                    <input asp-for="AdminPassword" class="form-control" />
+                    <small class="text-muted">Leave blank to keep existing password.</small>
+                </div>
+                <div class="col-md-12 d-flex align-items-center gap-3">
+                    <label asp-for="IsActive" class="form-label mb-0"></label>
+                    <label class="toggle-switch">
+                        <input asp-for="IsActive" />
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,176 @@
+@model AttendanceManagement.Web.ViewModels.Auth.AuthLandingViewModel
+@{
+    ViewData["Title"] = "Administrator Login";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var returnUrl = Model.ReturnUrl ?? ViewData["ReturnUrl"] as string;
+    var showCompanySetup = !Model.HasAnyCompany;
+}
+
+<section class="login-hero py-5" style="background: linear-gradient(135deg, #0f172a, #1d4ed8); min-height: 100vh;">
+    <div class="container">
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-10">
+                @if (TempData["SuccessMessage"] is string success)
+                {
+                    <div class="alert alert-success">@success</div>
+                }
+                @if (TempData["InfoMessage"] is string info)
+                {
+                    <div class="alert alert-info">@info</div>
+                }
+            </div>
+        </div>
+        <div class="row gy-4 justify-content-center">
+            <div class="col-lg-4">
+                <div class="card shadow-lg border-0 rounded-4 p-4 h-100">
+                    <div class="text-center mb-4">
+                        <span class="badge bg-primary-subtle text-primary">Attendance Management</span>
+                        <h2 class="mt-2">Company Admin Access</h2>
+                        <p class="text-muted">Enter company credentials to access the administrator suite.</p>
+                    </div>
+                    <form asp-action="Login" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <div class="mb-3">
+                            <label asp-for="Login.CompanyIdentifier" class="form-label"></label>
+                            <input asp-for="Login.CompanyIdentifier" class="form-control form-control-lg" placeholder="Company ID or Domain" />
+                            <span asp-validation-for="Login.CompanyIdentifier" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Login.AdminUserId" class="form-label"></label>
+                            <input asp-for="Login.AdminUserId" class="form-control form-control-lg" placeholder="Admin Username" />
+                            <span asp-validation-for="Login.AdminUserId" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Login.Password" class="form-label"></label>
+                            <input asp-for="Login.Password" class="form-control form-control-lg" placeholder="Password" />
+                            <span asp-validation-for="Login.Password" class="text-danger"></span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Login.ErrorMessage))
+                        {
+                            <div class="alert alert-danger">@Model.Login.ErrorMessage</div>
+                        }
+                        <button class="btn btn-primary w-100 btn-lg">Login</button>
+                    </form>
+                </div>
+            </div>
+
+            @if (showCompanySetup)
+            {
+                <div class="col-lg-8">
+                    <div class="card shadow-lg border-0 rounded-4 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h2>Set up your company</h2>
+                                <p class="text-muted mb-0">Create the first company to get started.</p>
+                            </div>
+                            <span class="badge bg-warning text-dark">First-time Setup</span>
+                        </div>
+                        <form asp-action="SetupCompany" method="post" class="row g-3">
+                            @Html.AntiForgeryToken()
+                            <div class="col-md-6">
+                                <label asp-for="Company.Name" class="form-label"></label>
+                                <input asp-for="Company.Name" class="form-control" />
+                                <span asp-validation-for="Company.Name" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Company.PhoneNumber" class="form-label"></label>
+                                <input asp-for="Company.PhoneNumber" class="form-control" />
+                                <span asp-validation-for="Company.PhoneNumber" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Company.FaxNumber" class="form-label"></label>
+                                <input asp-for="Company.FaxNumber" class="form-control" />
+                                <span asp-validation-for="Company.FaxNumber" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Company.NumberOfEmployees" class="form-label"></label>
+                                <input asp-for="Company.NumberOfEmployees" class="form-control" />
+                                <span asp-validation-for="Company.NumberOfEmployees" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-9">
+                                <label asp-for="Company.Domain" class="form-label"></label>
+                                <input asp-for="Company.Domain" class="form-control" />
+                                <span asp-validation-for="Company.Domain" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Company.AddressLine1" class="form-label"></label>
+                                <input asp-for="Company.AddressLine1" class="form-control" />
+                                <span asp-validation-for="Company.AddressLine1" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Company.AddressLine2" class="form-label"></label>
+                                <input asp-for="Company.AddressLine2" class="form-control" />
+                                <span asp-validation-for="Company.AddressLine2" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Company.CountryId" class="form-label"></label>
+                                <select asp-for="Company.CountryId" asp-items="Model.Company.Countries" class="form-select" data-company-country></select>
+                                <span asp-validation-for="Company.CountryId" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Company.CityId" class="form-label"></label>
+                                <select asp-for="Company.CityId" asp-items="Model.Company.Cities" class="form-select" data-company-city></select>
+                                <span asp-validation-for="Company.CityId" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Company.AdminUserId" class="form-label"></label>
+                                <input asp-for="Company.AdminUserId" class="form-control" />
+                                <span asp-validation-for="Company.AdminUserId" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Company.AdminPassword" class="form-label"></label>
+                                <input asp-for="Company.AdminPassword" class="form-control" />
+                                <span asp-validation-for="Company.AdminPassword" class="text-danger"></span>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" asp-for="Company.IsActive" />
+                                    <label class="form-check-label" asp-for="Company.IsActive"></label>
+                                </div>
+                            </div>
+                            <div class="col-12 d-flex justify-content-end">
+                                <button class="btn btn-success px-5">Create Company</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    @if (showCompanySetup)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const countrySelect = document.querySelector('[data-company-country]');
+                const citySelect = document.querySelector('[data-company-city]');
+
+                if (!countrySelect || !citySelect) {
+                    return;
+                }
+
+                countrySelect.addEventListener('change', async () => {
+                    const countryId = countrySelect.value;
+                    const response = await fetch(`/Auth/Cities?countryId=${countryId}`);
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const cities = await response.json();
+                    citySelect.innerHTML = '';
+                    cities.forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = city.id;
+                        option.textContent = city.name;
+                        citySelect.appendChild(option);
+                    });
+                });
+            });
+        </script>
+    }
+}
