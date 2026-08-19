@@ -23,6 +23,8 @@ public class Employee
     public int? ShiftId { get; set; }
     public int? LeaveId { get; set; }
 
+    public DateTime? AssignedShiftDate { get; set; }
+
     public DateTime? JoiningDate { get; set; }
     public DateTime? PeriodEndDate { get; set; }
     public DateTime? ResignationDate { get; set; }
@@ -90,4 +92,5 @@ public class Employee
     public Category? InchargeCategory { get; set; }
     public Designation? InchargeDesignation { get; set; }
     public Employee? InchargeEmployee { get; set; }
+    public ICollection<GroupEmployee> GroupEmployees { get; set; } = new List<GroupEmployee>();
 }

@@ -1,0 +1,175 @@
+@model AttendanceManagement.Web.ViewModels.AssignGroups.AssignGroupViewModel
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Edit Group Assignment" : "Create Group Assignment";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+   @*  <div>
+        <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit Group Assignment" : "Create Group Assignment")</h2>
+        <small class="text-muted">Assign group with specific criteria to employees</small>
+    </div> *@
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post">
+    @Html.AntiForgeryToken()
+    @if (Model.Id > 0)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <div class="row g-4">
+        <!-- Left Column - Group & Assignment Info -->
+        <div class="col-lg-8">
+            <!-- Group Selection Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-people me-2 text-primary"></i>Group Selection</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="CompanyId" class="form-label fw-semibold">Company</label>
+                            <input type="text" class="form-control bg-light" value="@Model.CompanyName" disabled />
+                            <input type="hidden" asp-for="CompanyId" />
+                            <small class="text-muted">Company is read-only</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="GroupId" class="form-label fw-semibold">Group</label>
+                            <select asp-for="GroupId" class="form-select" required>
+                                <option value="">-- Select Group --</option>
+                                @foreach (var group in Model.AvailableGroups)
+                                {
+                                    <option value="@group.Id" selected="@(Model.GroupId == group.Id)">@group.Name (@group.Code)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="GroupId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Information to be Assigned Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2 text-primary"></i>Information to be Assigned</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="EmployeeType" class="form-label fw-semibold">Employee Type</label>
+                            <select asp-for="EmployeeType" class="form-select">
+                                <option value="">-- Select Employee Type --</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Probation">Probation</option>
+                                <option value="Permanent">Permanent</option>
+                            </select>
+                            <span asp-validation-for="EmployeeType" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="LocationId" class="form-label fw-semibold">Location</label>
+                            <select asp-for="LocationId" class="form-select">
+                                <option value="">-- Select Location --</option>
+                                @foreach (var location in Model.AvailableLocations)
+                                {
+                                    <option value="@location.Id" selected="@(Model.LocationId == location.Id)">@location.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="LocationId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-12">
+                            <label asp-for="DepartmentId" class="form-label fw-semibold">Department</label>
+                            <select asp-for="DepartmentId" class="form-select">
+                                <option value="">-- Select Department --</option>
+                                @foreach (var dept in Model.AvailableDepartments)
+                                {
+                                    <option value="@dept.Id" selected="@(Model.DepartmentId == dept.Id)">@dept.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Incharge & Status -->
+        <div class="col-lg-4">
+            <!-- Incharge Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-person-workspace me-2 text-primary"></i>Incharge</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="InchargeCategoryId" class="form-label fw-semibold">Category</label>
+                        <select asp-for="InchargeCategoryId" class="form-select">
+                            <option value="">-- Select Category --</option>
+                            @foreach (var category in Model.AvailableInchargeCategories)
+                            {
+                                <option value="@category.Id" selected="@(Model.InchargeCategoryId == category.Id)">@category.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="InchargeCategoryId" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="InchargeDesignationId" class="form-label fw-semibold">Designation</label>
+                        <select asp-for="InchargeDesignationId" class="form-select">
+                            <option value="">-- Select Designation --</option>
+                            @foreach (var designation in Model.AvailableInchargeDesignations)
+                            {
+                                <option value="@designation.Id" selected="@(Model.InchargeDesignationId == designation.Id)">@designation.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="InchargeDesignationId" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="InchargeEmployeeId" class="form-label fw-semibold">Employee</label>
+                        <select asp-for="InchargeEmployeeId" class="form-select">
+                            <option value="">-- Select Employee --</option>
+                            @foreach (var employee in Model.AvailableInchargeEmployees)
+                            {
+                                <option value="@employee.Id" selected="@(Model.InchargeEmployeeId == employee.Id)">@employee.Name (@employee.EmployeeNo)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="InchargeEmployeeId" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-gear me-2 text-primary"></i>Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" asp-for="IsActive" />
+                        <label class="form-check-label fw-semibold">Active Assignment</label>
+                    </div>
+                    <small class="text-muted">Only active assignments will be applied to employees.</small>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-x-lg me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-check-lg me-2"></i>@(Model.Id > 0 ? "Update" : "Create")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

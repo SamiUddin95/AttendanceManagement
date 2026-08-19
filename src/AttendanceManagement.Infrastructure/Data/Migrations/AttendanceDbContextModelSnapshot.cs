@@ -22,6 +22,111 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.AssignGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("InchargeCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("InchargeDesignationId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("InchargeEmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int?>("LocationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("InchargeCategoryId");
+
+                    b.HasIndex("InchargeDesignationId");
+
+                    b.HasIndex("InchargeEmployeeId");
+
+                    b.HasIndex("LocationId");
+
+                    b.ToTable("AssignGroups", (string)null);
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.Attendance", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("PunchDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PunchType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("EmployeeId", "PunchDateTime");
+
+                    b.ToTable("Attendances", (string)null);
+                });
+
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.Category", b =>
                 {
                     b.Property<int>("Id")
@@ -228,6 +333,9 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -239,6 +347,8 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(150)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.ToTable("Departments", (string)null);
                 });
@@ -280,6 +390,9 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.Property<string>("Address")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("AssignedShiftDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("BloodGroup")
                         .HasMaxLength(20)
@@ -534,6 +647,40 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.ToTable("GroupDesignations", (string)null);
                 });
 
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.GroupEmployee", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime?>("RemovedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("GroupId");
+
+                    b.ToTable("GroupEmployees", (string)null);
+                });
+
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.GroupIncharge", b =>
                 {
                     b.Property<int>("GroupId")
@@ -604,6 +751,89 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.HasIndex("LeavePolicyId");
 
                     b.ToTable("Leaves", (string)null);
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.LeaveApplication", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CancelledBy")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InchargeApprovalStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("InchargeApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("InchargeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LeaveNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("LeaveType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<int>("TotalDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CancelledBy");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("InchargeId");
+
+                    b.ToTable("LeaveApplications", (string)null);
                 });
 
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.LeaveDetail", b =>
@@ -711,6 +941,255 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.ToTable("Locations", (string)null);
                 });
 
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.MarkDay", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FromDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsEid")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsGazettedHoliday")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsOff")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsOn")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsProvincialHoliday")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsStrike")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("ToDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TotalDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("GroupId");
+
+                    b.ToTable("MarkDays", (string)null);
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.Module", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Area")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Controller")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Modules", (string)null);
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.Role", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Roles", (string)null);
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.RoleAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AssignmentType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("RoleId", "CompanyId", "AssignmentType", "GroupId", "DepartmentId", "EmployeeId")
+                        .IsUnique()
+                        .HasFilter("[GroupId] IS NOT NULL AND [DepartmentId] IS NOT NULL AND [EmployeeId] IS NOT NULL");
+
+                    b.ToTable("RoleAssignments", (string)null);
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.RoleModule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CanCreate")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanDelete")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanEdit")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanView")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ModuleId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModuleId");
+
+                    b.HasIndex("RoleId", "ModuleId")
+                        .IsUnique();
+
+                    b.ToTable("RoleModules", (string)null);
+                });
+
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.Shift", b =>
                 {
                     b.Property<int>("Id")
@@ -812,6 +1291,79 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.ToTable("ShiftDays", (string)null);
                 });
 
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.AssignGroup", b =>
+                {
+                    b.HasOne("AttendanceManagement.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Category", "InchargeCategory")
+                        .WithMany()
+                        .HasForeignKey("InchargeCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Designation", "InchargeDesignation")
+                        .WithMany()
+                        .HasForeignKey("InchargeDesignationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Employee", "InchargeEmployee")
+                        .WithMany()
+                        .HasForeignKey("InchargeEmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Group");
+
+                    b.Navigation("InchargeCategory");
+
+                    b.Navigation("InchargeDesignation");
+
+                    b.Navigation("InchargeEmployee");
+
+                    b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.Attendance", b =>
+                {
+                    b.HasOne("AttendanceManagement.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.City", b =>
                 {
                     b.HasOne("AttendanceManagement.Domain.Entities.Country", "Country")
@@ -840,6 +1392,17 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.Navigation("City");
 
                     b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.Department", b =>
+                {
+                    b.HasOne("AttendanceManagement.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.Employee", b =>
@@ -958,6 +1521,25 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.Navigation("Group");
                 });
 
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.GroupEmployee", b =>
+                {
+                    b.HasOne("AttendanceManagement.Domain.Entities.Employee", "Employee")
+                        .WithMany("GroupEmployees")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Group", "Group")
+                        .WithMany("GroupEmployees")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Group");
+                });
+
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.GroupIncharge", b =>
                 {
                     b.HasOne("AttendanceManagement.Domain.Entities.Employee", "Employee")
@@ -1023,6 +1605,39 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.Navigation("LeavePolicy");
                 });
 
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.LeaveApplication", b =>
+                {
+                    b.HasOne("AttendanceManagement.Domain.Entities.Employee", "CancelledByEmployee")
+                        .WithMany()
+                        .HasForeignKey("CancelledBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Employee", "Incharge")
+                        .WithMany()
+                        .HasForeignKey("InchargeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CancelledByEmployee");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Incharge");
+                });
+
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.LeaveDetail", b =>
                 {
                     b.HasOne("AttendanceManagement.Domain.Entities.Leave", "Leave")
@@ -1043,6 +1658,84 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.MarkDay", b =>
+                {
+                    b.HasOne("AttendanceManagement.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.RoleAssignment", b =>
+                {
+                    b.HasOne("AttendanceManagement.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Role", "Role")
+                        .WithMany("RoleAssignments")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.RoleModule", b =>
+                {
+                    b.HasOne("AttendanceManagement.Domain.Entities.Module", "Module")
+                        .WithMany("RoleModules")
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AttendanceManagement.Domain.Entities.Role", "Role")
+                        .WithMany("RoleModules")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Module");
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.Shift", b =>
@@ -1079,11 +1772,18 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.Navigation("Companies");
                 });
 
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.Employee", b =>
+                {
+                    b.Navigation("GroupEmployees");
+                });
+
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.Group", b =>
                 {
                     b.Navigation("GroupDepartments");
 
                     b.Navigation("GroupDesignations");
+
+                    b.Navigation("GroupEmployees");
 
                     b.Navigation("GroupIncharges");
 
@@ -1093,6 +1793,18 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.Leave", b =>
                 {
                     b.Navigation("LeaveDetails");
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.Module", b =>
+                {
+                    b.Navigation("RoleModules");
+                });
+
+            modelBuilder.Entity("AttendanceManagement.Domain.Entities.Role", b =>
+                {
+                    b.Navigation("RoleAssignments");
+
+                    b.Navigation("RoleModules");
                 });
 
             modelBuilder.Entity("AttendanceManagement.Domain.Entities.Shift", b =>

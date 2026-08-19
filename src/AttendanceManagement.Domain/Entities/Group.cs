@@ -54,6 +54,7 @@ public class Group
     public ICollection<GroupLocation> GroupLocations { get; set; } = new List<GroupLocation>();
     public ICollection<GroupDesignation> GroupDesignations { get; set; } = new List<GroupDesignation>();
     public ICollection<GroupIncharge> GroupIncharges { get; set; } = new List<GroupIncharge>();
+    public ICollection<GroupEmployee> GroupEmployees { get; set; } = new List<GroupEmployee>();
 }
 
 // Junction table for Group-Department (many-to-many)

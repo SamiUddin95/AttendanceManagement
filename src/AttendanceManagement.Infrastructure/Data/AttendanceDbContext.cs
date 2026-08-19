@@ -28,6 +28,15 @@ public class AttendanceDbContext : DbContext
     public DbSet<GroupLocation> GroupLocations => Set<GroupLocation>();
     public DbSet<GroupDesignation> GroupDesignations => Set<GroupDesignation>();
     public DbSet<GroupIncharge> GroupIncharges => Set<GroupIncharge>();
+    public DbSet<AssignGroup> AssignGroups => Set<AssignGroup>();
+    public DbSet<LeaveApplication> LeaveApplications => Set<LeaveApplication>();
+    public DbSet<MarkDay> MarkDays => Set<MarkDay>();
+    public DbSet<GroupEmployee> GroupEmployees => Set<GroupEmployee>();
+    public DbSet<Attendance> Attendances => Set<Attendance>();
+    public DbSet<Module> Modules => Set<Module>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<RoleModule> RoleModules => Set<RoleModule>();
+    public DbSet<RoleAssignment> RoleAssignments => Set<RoleAssignment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,6 +93,10 @@ public class AttendanceDbContext : DbContext
             entity.ToTable("Departments");
             entity.Property(e => e.Name).HasMaxLength(150);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasOne(e => e.Company)
+                .WithMany()
+                .HasForeignKey(e => e.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Shift>(entity =>
@@ -289,6 +302,167 @@ public class AttendanceDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AssignGroup>(entity =>
+        {
+            entity.ToTable("AssignGroups");
+            entity.Property(e => e.EmployeeType).HasMaxLength(50);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasOne(e => e.Company)
+                .WithMany()
+                .HasForeignKey(e => e.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Group)
+                .WithMany()
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Location)
+                .WithMany()
+                .HasForeignKey(e => e.LocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Department)
+                .WithMany()
+                .HasForeignKey(e => e.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.InchargeCategory)
+                .WithMany()
+                .HasForeignKey(e => e.InchargeCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.InchargeDesignation)
+                .WithMany()
+                .HasForeignKey(e => e.InchargeDesignationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.InchargeEmployee)
+                .WithMany()
+                .HasForeignKey(e => e.InchargeEmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<LeaveApplication>(entity =>
+        {
+            entity.ToTable("LeaveApplications");
+            entity.Property(e => e.LeaveType).HasMaxLength(50);
+            entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("Pending");
+            entity.Property(e => e.InchargeApprovalStatus).HasMaxLength(20);
+            entity.Property(e => e.LeaveNumber).HasMaxLength(50).IsRequired();
+            entity.HasOne(e => e.Company)
+                .WithMany()
+                .HasForeignKey(e => e.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Employee)
+                .WithMany()
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Incharge)
+                .WithMany()
+                .HasForeignKey(e => e.InchargeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.CancelledByEmployee)
+                .WithMany()
+                .HasForeignKey(e => e.CancelledBy)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<MarkDay>(entity =>
+        {
+            entity.ToTable("MarkDays");
+            entity.HasOne(e => e.Company)
+                .WithMany()
+                .HasForeignKey(e => e.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Group)
+                .WithMany()
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GroupEmployee>(entity =>
+        {
+            entity.ToTable("GroupEmployees");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasOne(e => e.Group)
+                .WithMany(g => g.GroupEmployees)
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Employee)
+                .WithMany(e => e.GroupEmployees)
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Attendance>(entity =>
+        {
+            entity.ToTable("Attendances");
+            entity.HasIndex(e => new { e.EmployeeId, e.PunchDateTime });
+            entity.HasOne(e => e.Company)
+                .WithMany()
+                .HasForeignKey(e => e.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Employee)
+                .WithMany()
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Module>(entity =>
+        {
+            entity.ToTable("Modules");
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.DisplayName).HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.HasIndex(e => e.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.ToTable("Roles");
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.DisplayName).HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.HasIndex(e => e.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<RoleModule>(entity =>
+        {
+            entity.ToTable("RoleModules");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Role)
+                .WithMany(r => r.RoleModules)
+                .HasForeignKey(e => e.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Module)
+                .WithMany(m => m.RoleModules)
+                .HasForeignKey(e => e.ModuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.RoleId, e.ModuleId }).IsUnique();
+        });
+
+        modelBuilder.Entity<RoleAssignment>(entity =>
+        {
+            entity.ToTable("RoleAssignments");
+            entity.Property(e => e.AssignmentType).HasMaxLength(20);
+            entity.HasOne(e => e.Role)
+                .WithMany(r => r.RoleAssignments)
+                .HasForeignKey(e => e.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Company)
+                .WithMany()
+                .HasForeignKey(e => e.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Group)
+                .WithMany()
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Department)
+                .WithMany()
+                .HasForeignKey(e => e.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Employee)
+                .WithMany()
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new { e.RoleId, e.CompanyId, e.AssignmentType, e.GroupId, e.DepartmentId, e.EmployeeId }).IsUnique();
         });
 
         SeedLookups(modelBuilder);

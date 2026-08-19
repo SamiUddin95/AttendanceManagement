@@ -1,6 +1,7 @@
 using AttendanceManagement.Domain.Entities;
 using AttendanceManagement.Infrastructure.Data;
 using AttendanceManagement.Web.ViewModels.Employees;
+using BCrypt.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -118,7 +119,7 @@ public class EmployeeController : Controller
             Phone = viewModel.Phone,
             Cell = viewModel.Cell,
             Email = viewModel.Email,
-            Password = viewModel.Password,
+            Password = !string.IsNullOrWhiteSpace(viewModel.Password) ? BCrypt.Net.BCrypt.HashPassword(viewModel.Password) : null,
             Gender = viewModel.Gender,
             DateOfBirth = viewModel.DateOfBirth,
             CNIC = viewModel.CNIC,
@@ -247,7 +248,10 @@ public class EmployeeController : Controller
         employee.Phone = viewModel.Phone;
         employee.Cell = viewModel.Cell;
         employee.Email = viewModel.Email;
-        employee.Password = viewModel.Password;
+        if (!string.IsNullOrWhiteSpace(viewModel.Password))
+        {
+            employee.Password = BCrypt.Net.BCrypt.HashPassword(viewModel.Password);
+        }
         employee.Gender = viewModel.Gender;
         employee.DateOfBirth = viewModel.DateOfBirth;
         employee.CNIC = viewModel.CNIC;

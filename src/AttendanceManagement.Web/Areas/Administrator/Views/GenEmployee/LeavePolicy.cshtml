@@ -1,0 +1,166 @@
+@model AttendanceManagement.Web.ViewModels.LeavePolicy.EmployeeLeavePolicyViewModel
+@{
+    ViewData["Title"] = "Leave Policy";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">Leave Policy</h2>
+        <small class="text-muted">Your assigned leave policy and entitlements</small>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Employee Info Card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-person me-2 text-primary"></i>Employee Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Employee Name:</strong> @Model.EmployeeName
+            </div>
+            <div class="col-md-4">
+                <strong>Employee No:</strong> @Model.EmployeeNo
+            </div>
+            <div class="col-md-4">
+                <strong>Leave Policy:</strong> @Model.LeavePolicyName
+                <span class="badge bg-success-subtle text-success ms-2">@Model.LeavePolicyStatus</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Policy Details -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-file-text me-2 text-primary"></i>Leave Policy Details</h5>
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrWhiteSpace(Model.LeaveName) && Model.LeaveName != "Not Assigned")
+        {
+            <div class="mb-3">
+                <strong>Leave Scheme:</strong> @Model.LeaveName
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.LeaveDescription))
+            {
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <p class="mt-1">@Model.LeaveDescription</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-info-circle fs-1 d-block mb-2"></i>
+                <p class="mb-0">No leave policy assigned to this employee</p>
+                <small>Contact HR to assign a leave policy</small>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Leave Entitlements Table -->
+@if (Model.LeaveDetails.Any())
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-calendar-check me-2 text-primary"></i>Leave Entitlements</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Leave Type</th>
+                            <th class="text-center">Entitled Days</th>
+                            <th class="text-center">Carry Forward</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var detail in Model.LeaveDetails)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info">@detail.LeaveType</span>
+                                </td>
+                                <td class="text-center fw-semibold">@detail.NoOfDays</td>
+                                <td class="text-center">
+                                    @if (detail.CarryForward)
+                                    {
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bi bi-check me-1"></i>Yes
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary">
+                                            <i class="bi bi-x me-1"></i>No
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-body text-center py-4">
+            <div class="text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                <p class="mb-0">No leave entitlements defined</p>
+                <small class="text-muted">Leave details will appear here once policy is assigned</small>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Leave Balance Summary (Placeholder) -->
+<div class="card shadow-sm">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-pie-chart me-2 text-primary"></i>Leave Balance Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            @foreach (var detail in Model.LeaveDetails)
+            {
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 bg-light">
+                        <div class="card-body text-center">
+                            <div class="fs-4 fw-bold text-primary">@detail.NoOfDays</div>
+                            <div class="text-muted small">Total Entitled Days</div>
+                            <div class="fw-semibold mt-1">@detail.LeaveType</div>
+                            @if (detail.CarryForward)
+                            {
+                                <div class="text-success small mt-1">
+                                    <i class="bi bi-arrow-repeat me-1"></i>Carry Forward Allowed
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (!Model.LeaveDetails.Any())
+            {
+                <div class="col-12 text-center text-muted py-3">
+                    <i class="bi bi-info-circle fs-1 d-block mb-2"></i>
+                    <p class="mb-0">Leave balance will be calculated based on your entitlements and usage</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

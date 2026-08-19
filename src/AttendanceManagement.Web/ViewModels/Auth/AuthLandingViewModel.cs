@@ -5,6 +5,7 @@ namespace AttendanceManagement.Web.ViewModels.Auth;
 public class AuthLandingViewModel
 {
     public AdminLoginViewModel Login { get; set; } = new();
+    public EmployeeLoginViewModel EmployeeLogin { get; set; } = new();
     public CompanyFormViewModel Company { get; set; } = new();
     public bool HasAnyCompany { get; set; }
     public string? ReturnUrl { get; set; }

@@ -4,10 +4,10 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
+@*     <div>
         <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit Employee" : "Create Employee")</h2>
         <small class="text-muted">Manage employee information and details</small>
-    </div>
+    </div> *@
     <a asp-action="Index" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-2"></i>Back to List
     </a>
@@ -183,8 +183,22 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Password" class="form-label fw-semibold">Password</label>
-                            <input asp-for="Password" class="form-control" type="password" />
+                            <div class="input-group">
+                                <input asp-for="Password" class="form-control" type="password" 
+                                       placeholder="@(Model.Id > 0 ? "Leave blank to keep current password" : "Enter password")" />
+                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword(this)">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                             <span asp-validation-for="Password" class="text-danger"></span>
+                            @if (Model.Id > 0)
+                            {
+                                <small class="text-muted">Leave blank to keep current password. Passwords are securely hashed using BCrypt.</small>
+                            }
+                            else
+                            {
+                                <small class="text-muted">Password will be securely hashed using BCrypt.</small>
+                            }
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Gender" class="form-label fw-semibold">Gender</label>
@@ -328,5 +342,19 @@
                 reader.readAsDataURL(file);
             }
         });
+
+        function togglePassword(button) {
+            const input = button.previousElementSibling;
+            const icon = button.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
     </script>
 }

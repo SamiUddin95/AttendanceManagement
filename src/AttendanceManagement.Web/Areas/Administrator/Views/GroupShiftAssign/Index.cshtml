@@ -1,0 +1,273 @@
+@model AttendanceManagement.Web.ViewModels.GroupShiftAssigns.GroupShiftAssignViewModel
+@{
+    ViewData["Title"] = "Group Shift Assign";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+ @*    <div>
+        <h2 class="h4 mb-1">Group Shift Assign</h2>
+        <small class="text-muted">Assign shifts to employees by group</small>
+    </div> *@
+</div>
+
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- Left Column - Group Selection & Employee List -->
+    <div class="col-lg-8">
+        <!-- Group Selection Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light py-3">
+                <h5 class="mb-0"><i class="bi bi-people me-2 text-primary"></i>Group Selection</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="LoadGroupEmployees" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-6">
+                        <label asp-for="CompanyId" class="form-label fw-semibold">Company</label>
+                        <input type="text" class="form-control bg-light" value="@Model.CompanyName" disabled />
+                        <input type="hidden" asp-for="CompanyId" />
+                        <small class="text-muted">Company is read-only</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="GroupId" class="form-label fw-semibold">Group</label>
+                        <select asp-for="GroupId" class="form-select" required>
+                            <option value="">-- Select Group --</option>
+                            @foreach (var group in Model.AvailableGroups)
+                            {
+                                <option value="@group.Id" selected="@(Model.GroupId == group.Id)">@group.Name (@group.Code)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="GroupId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-2"></i>Load
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Employee List Card -->
+        @if (Model.GroupId > 0 && Model.GroupEmployees != null && Model.GroupEmployees.Any())
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Group Employees</h5>
+                    <span class="badge bg-primary">@Model.GroupEmployees.Count employees</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4" style="width: 50px;">
+                                        <input type="checkbox" id="selectAll" class="form-check-input" />
+                                    </th>
+                                    <th>Emp No</th>
+                                    <th>Name</th>
+                                    <th>Assigned Shift</th>
+                                    <th>Assigned Shift Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var employee in Model.GroupEmployees)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <input type="checkbox" class="form-check-input employee-checkbox" 
+                                                   name="SelectedEmployeeIds" value="@employee.EmployeeId" />
+                                        </td>
+                                        <td class="fw-semibold">@employee.EmployeeNo</td>
+                                        <td>@employee.Name</td>
+                                        <td>
+                                            @if (employee.CurrentShiftId.HasValue)
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                    @employee.CurrentShiftName
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not assigned</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (employee.CurrentAssignedShiftDate.HasValue)
+                                            {
+                                                <span class="small">@employee.CurrentAssignedShiftDate.Value.ToString("dd MMM yyyy")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (Model.GroupId > 0)
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center py-5">
+                    <div class="text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        <p class="mb-0">No employees found in this group</p>
+                        <small class="text-muted">Add employees to the group first</small>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Right Column - Shift Assignment -->
+    <div class="col-lg-4">
+        @if (Model.GroupId > 0 && Model.GroupEmployees != null && Model.GroupEmployees.Any())
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-clock me-2 text-primary"></i>Assign Shift To</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Assign" method="post" id="assignShiftForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="CompanyId" />
+                        <input type="hidden" asp-for="GroupId" />
+                        <input type="hidden" id="selectedEmployeeIdsInput" name="SelectedEmployeeIds" value="" />
+                        
+                        <div class="mb-3">
+                            <label asp-for="AssignedShiftDate" class="form-label fw-semibold">Date</label>
+                            <input asp-for="AssignedShiftDate" type="date" class="form-control" min="@DateTime.UtcNow.ToString("yyyy-MM-dd")" required />
+                            <span asp-validation-for="AssignedShiftDate" class="text-danger"></span>
+                            <small class="text-muted">Cannot be a back date</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="AssignedShiftId" class="form-label fw-semibold">Shift</label>
+                            <select asp-for="AssignedShiftId" class="form-select" required>
+                                <option value="">-- Select Shift --</option>
+                                @foreach (var shift in Model.AvailableShifts)
+                                {
+                                    <option value="@shift.Id">@shift.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="AssignedShiftId" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <span id="selectedCount">0</span> employee(s) selected
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check-lg me-2"></i>Assign Shift
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <!-- Info Card -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="info-icon bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-info-circle"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-semibold mb-2">Instructions</h6>
+                        <ul class="mb-0 small text-muted">
+                            <li>Select a group to load its employees</li>
+                            <li>Check the employees you want to assign shift to</li>
+                            <li>Select the shift and effective date</li>
+                            <li>Date cannot be a back date</li>
+                            <li>Click "Assign Shift" to update selected employees</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select all checkbox functionality
+            const selectAll = document.getElementById('selectAll');
+            const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
+            const selectedCount = document.getElementById('selectedCount');
+            const assignShiftForm = document.getElementById('assignShiftForm');
+            const selectedEmployeeIdsInput = document.getElementById('selectedEmployeeIdsInput');
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    employeeCheckboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                    updateSelectedCount();
+                });
+            }
+
+            employeeCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateSelectedCount();
+                });
+            });
+
+            function updateSelectedCount() {
+                const count = document.querySelectorAll('.employee-checkbox:checked').length;
+                if (selectedCount) {
+                    selectedCount.textContent = count;
+                }
+            }
+
+            // Before form submission, copy selected employee IDs to hidden input
+            if (assignShiftForm) {
+                assignShiftForm.addEventListener('submit', function(e) {
+                    const checkedBoxes = document.querySelectorAll('.employee-checkbox:checked');
+                    const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+                    
+                    // Remove existing hidden inputs
+                    const existingInputs = assignShiftForm.querySelectorAll('input[name="SelectedEmployeeIds"]');
+                    existingInputs.forEach(input => input.remove());
+                    
+                    // Add new hidden inputs for each selected ID
+                    selectedIds.forEach(id => {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'SelectedEmployeeIds';
+                        hiddenInput.value = id;
+                        assignShiftForm.appendChild(hiddenInput);
+                    });
+                });
+            }
+        });
+    </script>
+}
+
+<style>
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+</style>

@@ -1,0 +1,171 @@
+@model AttendanceManagement.Web.ViewModels.MarkDays.MarkDayListViewModel
+@{
+    ViewData["Title"] = "Mark Days";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+   @*  <div>
+        <h2 class="h4 mb-1">Mark Days</h2>
+        <small class="text-muted">Mark days with specific status for employee groups</small>
+    </div> *@
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>New Mark Day
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Search by group name, code..." />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Group</th>
+                        <th>Company</th>
+                        <th>Date Range</th>
+                        <th>Total Days</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.MarkDays != null && Model.MarkDays.Any())
+                    {
+                        @foreach (var markDay in Model.MarkDays)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="markday-avatar me-3">
+                                            <i class="bi bi-calendar-check"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@markDay.GroupName</div>
+                                            <small class="text-muted">ID: @markDay.Id</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-building text-muted small"></i>
+                                        <span>@markDay.CompanyName</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        <div>@markDay.FromDate.ToString("dd MMM yyyy")</div>
+                                        <div class="text-muted">to @markDay.ToDate.ToString("dd MMM yyyy")</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                        @markDay.TotalDays days
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @if (markDay.IsOn)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">ON</span>
+                                        }
+                                        @if (markDay.IsOff)
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">OFF</span>
+                                        }
+                                        @if (markDay.IsGazettedHoliday)
+                                        {
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle">Gazetted</span>
+                                        }
+                                        @if (markDay.IsProvincialHoliday)
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Provincial</span>
+                                        }
+                                        @if (markDay.IsStrike)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Strike</span>
+                                        }
+                                        @if (markDay.IsEid)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">Eid</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <a asp-action="Edit" asp-route-id="@markDay.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@markDay.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this day marking?');">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                                    <p class="mb-0">No day markings found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .markday-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+    }
+
+    .badge {
+        padding: 0.35rem 0.5rem;
+        font-weight: 500;
+        font-size: 0.75rem;
+    }
+</style>

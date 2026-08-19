@@ -60,6 +60,7 @@ public class GroupController : Controller
     {
         var viewModel = new GroupViewModel();
         await PopulateDropdownsAsync(viewModel);
+        await LoadGroupEmployeesAsync(viewModel);
         return View("Edit", viewModel);
     }
 
@@ -70,6 +71,7 @@ public class GroupController : Controller
         if (!ModelState.IsValid)
         {
             await PopulateDropdownsAsync(viewModel);
+            await LoadGroupEmployeesAsync(viewModel);
             return View("Edit", viewModel);
         }
 
@@ -102,6 +104,9 @@ public class GroupController : Controller
         // Add junction table entries
         await AddJunctionEntriesAsync(group.Id, viewModel);
 
+        // Add group employees
+        await AddGroupEmployeesAsync(group.Id, viewModel);
+
         TempData["SuccessMessage"] = "Group created successfully.";
         return RedirectToAction(nameof(Index));
     }
@@ -114,6 +119,7 @@ public class GroupController : Controller
             .Include(g => g.GroupLocations)
             .Include(g => g.GroupDesignations)
             .Include(g => g.GroupIncharges)
+            .Include(g => g.GroupEmployees)
             .FirstOrDefaultAsync(g => g.Id == id);
 
         if (group is null)
@@ -147,10 +153,12 @@ public class GroupController : Controller
             SelectedDepartmentIds = group.GroupDepartments.Select(gd => gd.DepartmentId).ToList(),
             SelectedLocationIds = group.GroupLocations.Select(gl => gl.LocationId).ToList(),
             SelectedDesignationIds = group.GroupDesignations.Select(gd => gd.DesignationId).ToList(),
-            SelectedInchargeIds = group.GroupIncharges.Select(gi => gi.EmployeeId).ToList()
+            SelectedInchargeIds = group.GroupIncharges.Select(gi => gi.EmployeeId).ToList(),
+            SelectedEmployeeIds = group.GroupEmployees.Where(ge => ge.IsActive).Select(ge => ge.EmployeeId).ToList()
         };
 
         await PopulateDropdownsAsync(viewModel);
+        await LoadGroupEmployeesAsync(viewModel);
         return View(viewModel);
     }
 
@@ -200,6 +208,9 @@ public class GroupController : Controller
 
         // Add new junction entries
         await AddJunctionEntriesAsync(id, viewModel);
+
+        // Update group employees
+        await UpdateGroupEmployeesAsync(id, viewModel);
 
         _context.Groups.Update(group);
         await _context.SaveChangesAsync();
@@ -342,6 +353,100 @@ public class GroupController : Controller
 
         var incharges = await _context.GroupIncharges.Where(gi => gi.GroupId == groupId).ToListAsync();
         _context.GroupIncharges.RemoveRange(incharges);
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task LoadGroupEmployeesAsync(GroupViewModel viewModel)
+    {
+        if (viewModel.Id == 0)
+        {
+            // For new groups, load all active employees
+            var employees = await _context.Employees
+                .Include(e => e.Department)
+                .Include(e => e.Designation)
+                .Where(e => e.IsActive && e.CompanyId == viewModel.CompanyId)
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+
+            viewModel.GroupEmployees = employees.Select(e => new GroupEmployeeItem
+            {
+                EmployeeId = e.Id,
+                EmployeeNo = e.EmployeeNo,
+                Name = e.Name,
+                Department = e.Department?.Name,
+                Designation = e.Designation?.Name
+            }).ToList();
+        }
+        else
+        {
+            // For existing groups, load all active employees (not just assigned ones)
+            var employees = await _context.Employees
+                .Include(e => e.Department)
+                .Include(e => e.Designation)
+                .Where(e => e.IsActive && e.CompanyId == viewModel.CompanyId)
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+
+            viewModel.GroupEmployees = employees.Select(e => new GroupEmployeeItem
+            {
+                EmployeeId = e.Id,
+                EmployeeNo = e.EmployeeNo,
+                Name = e.Name,
+                Department = e.Department?.Name,
+                Designation = e.Designation?.Name
+            }).ToList();
+        }
+    }
+
+    private async Task UpdateGroupEmployeesAsync(int groupId, GroupViewModel viewModel)
+    {
+        // Get currently assigned employees
+        var currentAssignments = await _context.GroupEmployees
+            .Where(ge => ge.GroupId == groupId && ge.IsActive)
+            .ToListAsync();
+
+        // Get selected employee IDs
+        var selectedIds = viewModel.SelectedEmployeeIds ?? new List<int>();
+
+        // Remove employees that are no longer selected
+        var toRemove = currentAssignments.Where(ge => !selectedIds.Contains(ge.EmployeeId)).ToList();
+        foreach (var assignment in toRemove)
+        {
+            assignment.IsActive = false;
+            assignment.RemovedAtUtc = DateTime.UtcNow;
+        }
+
+        // Add newly selected employees
+        var currentIds = currentAssignments.Select(ge => ge.EmployeeId).ToList();
+        var toAdd = selectedIds.Where(id => !currentIds.Contains(id)).ToList();
+        foreach (var employeeId in toAdd)
+        {
+            _context.GroupEmployees.Add(new GroupEmployee
+            {
+                GroupId = groupId,
+                EmployeeId = employeeId,
+                IsActive = true,
+                AssignedAtUtc = DateTime.UtcNow
+            });
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task AddGroupEmployeesAsync(int groupId, GroupViewModel viewModel)
+    {
+        var selectedIds = viewModel.SelectedEmployeeIds ?? new List<int>();
+        foreach (var employeeId in selectedIds)
+        {
+            _context.GroupEmployees.Add(new GroupEmployee
+            {
+                GroupId = groupId,
+                EmployeeId = employeeId,
+                IsActive = true,
+                AssignedAtUtc = DateTime.UtcNow
+            });
+        }
 
         await _context.SaveChangesAsync();
     }

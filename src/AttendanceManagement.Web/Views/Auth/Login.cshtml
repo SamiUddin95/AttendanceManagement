@@ -55,6 +55,35 @@
                 </div>
             </div>
 
+            <div class="col-lg-4">
+                <div class="card shadow-lg border-0 rounded-4 p-4 h-100">
+                    <div class="text-center mb-4">
+                        <span class="badge bg-success-subtle text-success">Employee Portal</span>
+                        <h2 class="mt-2">Employee Login</h2>
+                        <p class="text-muted">Enter your Employee No and Password to access your dashboard.</p>
+                    </div>
+                    <form asp-action="EmployeeLogin" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@returnUrl" />
+                        <div class="mb-3">
+                            <label asp-for="EmployeeLogin.EmployeeNo" class="form-label"></label>
+                            <input asp-for="EmployeeLogin.EmployeeNo" class="form-control form-control-lg" placeholder="Employee No" />
+                            <span asp-validation-for="EmployeeLogin.EmployeeNo" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="EmployeeLogin.Password" class="form-label"></label>
+                            <input asp-for="EmployeeLogin.Password" class="form-control form-control-lg" placeholder="Password" />
+                            <span asp-validation-for="EmployeeLogin.Password" class="text-danger"></span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.EmployeeLogin.ErrorMessage))
+                        {
+                            <div class="alert alert-danger">@Model.EmployeeLogin.ErrorMessage</div>
+                        }
+                        <button class="btn btn-success w-100 btn-lg">Login</button>
+                    </form>
+                </div>
+            </div>
+
             @if (showCompanySetup)
             {
                 <div class="col-lg-8">

@@ -10,5 +10,9 @@ public class Department
     [Required, MaxLength(150)]
     public string Name { get; set; } = string.Empty;
 
+    public Guid CompanyId { get; set; }
+
+    public Company? Company { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

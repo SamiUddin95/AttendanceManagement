@@ -1,0 +1,126 @@
+@model IEnumerable<AttendanceManagement.Application.Contracts.Modules.ModuleDto>
+
+@{
+    var currentArea = (string?)ViewContext.RouteData.Values["area"] ?? string.Empty;
+    var currentController = (string?)ViewContext.RouteData.Values["controller"] ?? string.Empty;
+    var currentAction = (string?)ViewContext.RouteData.Values["action"] ?? string.Empty;
+
+    bool IsActive(string? area, string? controller, string? action)
+    {
+        var areaMatch = string.Equals(currentArea, area ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        var controllerMatch = string.Equals(currentController, controller ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        var actionMatch = string.IsNullOrWhiteSpace(action) || string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
+        return areaMatch && controllerMatch && actionMatch;
+    }
+
+    var adminSubPages = new[]
+    {
+        new { Title = "Company",            Icon = "bi-building-gear",   Area = "Administrator", Controller = "Company",          Action = "Index"  },
+        new { Title = "LookUp",             Icon = "bi-list-check",      Area = "Administrator", Controller = "Dashboard",        Action = "Lookups"},
+        new { Title = "Shift",              Icon = "bi-clock",           Area = "Administrator", Controller = "Shift",            Action = "Index"  },
+        new { Title = "Leave Policy",       Icon = "bi-calendar-check",  Area = "Administrator", Controller = "LeavePolicy",      Action = "Index"  },
+        new { Title = "Leave",              Icon = "bi-calendar3",       Area = "Administrator", Controller = "Leave",            Action = "Index"  },
+        new { Title = "Leave Cancellation", Icon = "bi-calendar-x",      Area = "Administrator", Controller = "LeaveCancellation",Action = "Index"  },
+        new { Title = "Employee",           Icon = "bi-person-badge",    Area = "Administrator", Controller = "Employee",         Action = "Index"  },
+        new { Title = "Group",              Icon = "bi-people",          Area = "Administrator", Controller = "Group",            Action = "Index"  },
+        new { Title = "Location",           Icon = "bi-geo-alt",         Area = "Administrator", Controller = "Location",         Action = "Index"  },
+        new { Title = "Assign Group",       Icon = "bi-people-fill",     Area = "Administrator", Controller = "AssignGroup",      Action = "Index"  },
+        new { Title = "Mark Days",          Icon = "bi-calendar-check",  Area = "Administrator", Controller = "MarkDay",          Action = "Index"  },
+        new { Title = "Group Shift Assign", Icon = "bi-clock-history",   Area = "Administrator", Controller = "GroupShiftAssign", Action = "Index"  }
+    };
+
+    var superUserSubPages = new[]
+    {
+        new { Title = "Dashboard",   Icon = "bi-speedometer2",  Area = "SuperUser", Controller = "Dashboard",  Action = "Index" },
+        new { Title = "Role",        Icon = "bi-shield-lock",   Area = "SuperUser", Controller = "Role",       Action = "Index" },
+        new { Title = "Assign Role", Icon = "bi-person-badge",  Area = "SuperUser", Controller = "AssignRole", Action = "Index" },
+        new { Title = "Module",      Icon = "bi-grid",          Area = "SuperUser", Controller = "Module",     Action = "Index" }
+    };
+
+    var genEmployeeSubPages = new[]
+    {
+        new { Title = "View Calendar",     Icon = "bi-calendar-week",  Area = "Administrator", Controller = "GenEmployee", Action = "ViewCalendar"    },
+        new { Title = "Change Password",   Icon = "bi-shield-lock",    Area = "Administrator", Controller = "GenEmployee", Action = "ChangePassword"  },
+        new { Title = "Apply for Leave",   Icon = "bi-calendar-plus",  Area = "Administrator", Controller = "GenEmployee", Action = "ApplyForLeave"   },
+        new { Title = "Leave Flexis Chart",Icon = "bi-bar-chart",      Area = "Administrator", Controller = "GenEmployee", Action = "LeaveFlexisChart"},
+        new { Title = "Leave History",     Icon = "bi-clock-history",  Area = "Administrator", Controller = "GenEmployee", Action = "LeaveHistory"    },
+        new { Title = "Leave Policy",      Icon = "bi-calendar-check", Area = "Administrator", Controller = "GenEmployee", Action = "LeavePolicy"     },
+        new { Title = "In Out Timings",    Icon = "bi-clock",          Area = "Administrator", Controller = "GenEmployee", Action = "InOutTimings"    }
+    };
+}
+
+@foreach (var module in Model.OrderBy(m => m.SortOrder).ThenBy(m => m.DisplayName))
+{
+    @if (string.Equals(module.Name, "Dashboard", StringComparison.OrdinalIgnoreCase))
+    {
+        @* Dashboard is hardcoded in the layout — skip to avoid duplicate *@
+    }
+    else if (string.Equals(module.Name, "SuperUser", StringComparison.OrdinalIgnoreCase))
+    {
+        var isDropdownActive = superUserSubPages.Any(p => IsActive(p.Area, p.Controller, p.Action));
+        <div class="dropdown">
+            <button class="nav-link dropdown-toggle @(isDropdownActive ? "active" : "")" type="button" data-bs-toggle="dropdown">
+                <i class="bi @module.Icon me-1"></i>@module.DisplayName
+            </button>
+            <ul class="dropdown-menu">
+                @foreach (var subPage in superUserSubPages)
+                {
+                    <li>
+                        <a asp-area="@subPage.Area" asp-controller="@subPage.Controller" asp-action="@subPage.Action"
+                           class="dropdown-item @(IsActive(subPage.Area, subPage.Controller, subPage.Action) ? "active" : "")">
+                            <i class="bi @subPage.Icon me-2"></i>@subPage.Title
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+    else if (string.Equals(module.Name, "Administrator", StringComparison.OrdinalIgnoreCase))
+    {
+        var isDropdownActive = adminSubPages.Any(p => IsActive(p.Area, p.Controller, p.Action));
+        <div class="dropdown">
+            <button class="nav-link dropdown-toggle @(isDropdownActive ? "active" : "")" type="button" data-bs-toggle="dropdown">
+                <i class="bi @module.Icon me-1"></i>@module.DisplayName
+            </button>
+            <ul class="dropdown-menu">
+                @foreach (var subPage in adminSubPages)
+                {
+                    <li>
+                        <a asp-area="@subPage.Area" asp-controller="@subPage.Controller" asp-action="@subPage.Action"
+                           class="dropdown-item @(IsActive(subPage.Area, subPage.Controller, subPage.Action) ? "active" : "")">
+                            <i class="bi @subPage.Icon me-2"></i>@subPage.Title
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+    else if (string.Equals(module.Name, "GenEmployee", StringComparison.OrdinalIgnoreCase))
+    {
+        var isDropdownActive = genEmployeeSubPages.Any(p => IsActive(p.Area, p.Controller, p.Action));
+        <div class="dropdown">
+            <button class="nav-link dropdown-toggle @(isDropdownActive ? "active" : "")" type="button" data-bs-toggle="dropdown">
+                <i class="bi @module.Icon me-1"></i>@module.DisplayName
+            </button>
+            <ul class="dropdown-menu">
+                @foreach (var subPage in genEmployeeSubPages)
+                {
+                    <li>
+                        <a asp-area="@subPage.Area" asp-controller="@subPage.Controller" asp-action="@subPage.Action"
+                           class="dropdown-item @(IsActive(subPage.Area, subPage.Controller, subPage.Action) ? "active" : "")">
+                            <i class="bi @subPage.Icon me-2"></i>@subPage.Title
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+    else
+    {
+        var isActive = IsActive(module.Area, module.Controller, module.Action);
+        <a asp-area="@module.Area" asp-controller="@module.Controller" asp-action="@module.Action"
+           class="nav-link @(isActive ? "active" : "")">
+            <i class="bi @module.Icon me-1"></i>@module.DisplayName
+        </a>
+    }
+}

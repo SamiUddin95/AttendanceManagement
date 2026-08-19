@@ -34,9 +34,13 @@
         new { Title = "Shift", Icon = "bi-clock", Area = "Administrator", Controller = "Shift", Action = "Index" },
         new { Title = "Leave Policy", Icon = "bi-calendar-check", Area = "Administrator", Controller = "LeavePolicy", Action = "Index" },
         new { Title = "Leave", Icon = "bi-calendar3", Area = "Administrator", Controller = "Leave", Action = "Index" },
+        new { Title = "Leave Cancellation", Icon = "bi-calendar-x", Area = "Administrator", Controller = "LeaveCancellation", Action = "Index" },
         new { Title = "Employee", Icon = "bi-person-badge", Area = "Administrator", Controller = "Employee", Action = "Index" },
         new { Title = "Group", Icon = "bi-people", Area = "Administrator", Controller = "Group", Action = "Index" },
-        new { Title = "Location", Icon = "bi-geo-alt", Area = "Administrator", Controller = "Location", Action = "Index" }
+        new { Title = "Location", Icon = "bi-geo-alt", Area = "Administrator", Controller = "Location", Action = "Index" },
+        new { Title = "Assign Group", Icon = "bi-people-fill", Area = "Administrator", Controller = "AssignGroup", Action = "Index" },
+        new { Title = "Mark Days", Icon = "bi-calendar-check", Area = "Administrator", Controller = "MarkDay", Action = "Index" },
+        new { Title = "Group Shift Assign", Icon = "bi-clock-history", Area = "Administrator", Controller = "GroupShiftAssign", Action = "Index" }
     };
 
     var otherModules = new List<dynamic>
@@ -103,121 +107,7 @@
                         <i class="bi bi-speedometer2 me-1"></i>Dashboard
                     </a>
                     <div class="nav-divider"></div>
-                    @{
-                        var adminDropdownActive = adminModules.Any(m => !string.IsNullOrWhiteSpace(m.Controller) && IsActive(m.Area, m.Controller, m.Action, m.GetType().GetProperty("Section")?.GetValue(m) as string));
-                    }
-                    <div class="dropdown">
-                        <button class="nav-link dropdown-toggle @(adminDropdownActive ? "active" : "")" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-grid-1x2-fill me-1"></i>Administrator
-                        </button>
-                        <ul class="dropdown-menu">
-                            @foreach (var item in adminModules)
-                            {
-                                if (!string.IsNullOrWhiteSpace(item.Controller))
-                                {
-                                    var section = item.GetType().GetProperty("Section")?.GetValue(item) as string;
-                                    var isActive = IsActive(item.Area, item.Controller, item.Action, section);
-                                    <li>
-                                        <a asp-area="@item.Area"
-                                           asp-controller="@item.Controller"
-                                           asp-action="@item.Action"
-                                           asp-route-section="@(section)"
-                                           class="dropdown-item @(isActive ? "active" : "")">
-                                            <i class="bi @item.Icon me-2"></i>@item.Title
-                                        </a>
-                                    </li>
-                                }
-                                else
-                                {
-                                    <li>
-                                        <a href="#!" class="dropdown-item disabled">
-                                            <i class="bi @item.Icon me-2"></i>@item.Title
-                                            <small class="text-muted ms-2">(Coming soon)</small>
-                                        </a>
-                                    </li>
-                                }
-                            }
-                        </ul>
-                    </div>
-                    <div class="nav-divider"></div>
-                    <div class="dropdown">
-                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-calendar-minus me-1"></i>Leave
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a href="#!" class="dropdown-item disabled">
-                                    <i class="bi bi-calendar-minus me-2"></i>Leave
-                                    <small class="text-muted ms-2">(Coming soon)</small>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="dropdown">
-                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-workspace me-1"></i>Gen Incharge
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a href="#!" class="dropdown-item disabled">
-                                    <i class="bi bi-person-workspace me-2"></i>Gen Incharge
-                                    <small class="text-muted ms-2">(Coming soon)</small>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="dropdown">
-                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-briefcase me-1"></i>Gen Employee
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a href="#!" class="dropdown-item disabled">
-                                    <i class="bi bi-briefcase me-2"></i>Gen Employee
-                                    <small class="text-muted ms-2">(Coming soon)</small>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="dropdown">
-                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-list-check me-1"></i>List
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a href="#!" class="dropdown-item disabled">
-                                    <i class="bi bi-list-check me-2"></i>List
-                                    <small class="text-muted ms-2">(Coming soon)</small>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="dropdown">
-                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-graph-up me-1"></i>Report
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a href="#!" class="dropdown-item disabled">
-                                    <i class="bi bi-graph-up me-2"></i>Report
-                                    <small class="text-muted ms-2">(Coming soon)</small>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="dropdown">
-                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-arrow-repeat me-1"></i>Process
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a href="#!" class="dropdown-item disabled">
-                                    <i class="bi bi-arrow-repeat me-2"></i>Process
-                                    <small class="text-muted ms-2">(Coming soon)</small>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
+                    @await Component.InvokeAsync("ModuleNavigation")
                 </div>
             </div>
         </nav>

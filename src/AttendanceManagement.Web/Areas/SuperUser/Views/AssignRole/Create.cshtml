@@ -1,0 +1,281 @@
+@model AttendanceManagement.Web.ViewModels.SuperUser.AssignRoleViewModel
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Edit Role Assignment" : "Create Role Assignment";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit" : "Create") Role Assignment</h2>
+        <small class="text-muted">@(Model.Id > 0 ? "Update role assignment" : "Assign a role to a group or individual employee")</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@successMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post" id="assignRoleForm">
+    @Html.AntiForgeryToken()
+    @if (Model.Id > 0)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <!-- Assignment Type -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-tag me-2 text-primary"></i>Assignment Type</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="form-check form-check-inline">
+                        <input type="radio" class="form-check-input" id="typeGroup" name="AssignmentType" value="Group" 
+                               @(Model.AssignmentType == "Group" ? "checked" : "") required />
+                        <label class="form-check-label fw-semibold" for="typeGroup">
+                            <i class="bi bi-people me-1 text-info"></i>Group Assignment
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline ms-3">
+                        <input type="radio" class="form-check-input" id="typeIndividual" name="AssignmentType" value="Individual" 
+                               @(Model.AssignmentType == "Individual" ? "checked" : "") />
+                        <label class="form-check-label fw-semibold" for="typeIndividual">
+                            <i class="bi bi-person me-1 text-success"></i>Individual Assignment
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Basic Selection -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-building me-2 text-primary"></i>Company & Role</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="CompanyId" class="form-label fw-semibold">Company <span class="text-danger">*</span></label>
+                    <select asp-for="CompanyId" asp-items="Model.CompanyOptions" class="form-select" required>
+                        <option value="">-- Select Company --</option>
+                    </select>
+                    <span asp-validation-for="CompanyId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="RoleId" class="form-label fw-semibold">Role <span class="text-danger">*</span></label>
+                    <select asp-for="RoleId" asp-items="Model.RoleOptions" class="form-select" required>
+                        <option value="">-- Select Role --</option>
+                    </select>
+                    <span asp-validation-for="RoleId" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Assignment Fields -->
+    <div class="card shadow-sm mb-4" id="groupFields" @(Model.AssignmentType == "Group" ? "" : "style='display:none;'")>
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-people me-2 text-info"></i>Group Selection</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="GroupId" class="form-label fw-semibold">Group <span class="text-danger">*</span></label>
+                    <select asp-for="GroupId" asp-items="Model.GroupOptions" class="form-select" required>
+                        <option value="">-- Select Group --</option>
+                    </select>
+                    <span asp-validation-for="GroupId" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Assignment Fields -->
+    <div class="card shadow-sm mb-4" id="individualFields" @(Model.AssignmentType == "Individual" ? "" : "style='display:none;'")>
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-person me-2 text-success"></i>Individual Selection</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="DepartmentId" class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
+                    <select asp-for="DepartmentId" asp-items="Model.DepartmentOptions" class="form-select" required>
+                        <option value="">-- Select Department --</option>
+                    </select>
+                    <span asp-validation-for="DepartmentId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EmployeeId" class="form-label fw-semibold">Employee <span class="text-danger">*</span></label>
+                    <select asp-for="EmployeeId" asp-items="Model.EmployeeOptions" class="form-select" required>
+                        <option value="">-- Select Employee --</option>
+                    </select>
+                    <span asp-validation-for="EmployeeId" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-toggle-on me-2 text-primary"></i>Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-check form-switch">
+                <input asp-for="IsActive" class="form-check-input" role="switch" />
+                <label class="form-check-label fw-semibold" asp-for="IsActive">Active</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-2"></i>@(Model.Id > 0 ? "Update" : "Create") Assignment
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg me-2"></i>Cancel
+        </a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const typeGroup = document.getElementById('typeGroup');
+            const typeIndividual = document.getElementById('typeIndividual');
+            const groupFields = document.getElementById('groupFields');
+            const individualFields = document.getElementById('individualFields');
+            const companySelect = document.getElementById('CompanyId');
+            const departmentSelect = document.getElementById('DepartmentId');
+            const groupSelect = document.getElementById('GroupId');
+            const employeeSelect = document.getElementById('EmployeeId');
+
+            if (!companySelect || !departmentSelect || !groupSelect || !employeeSelect) {
+                console.error('One or more required dropdowns were not found');
+                return;
+            }
+
+            function toggleFields() {
+                if (typeGroup.checked) {
+                    groupFields.style.display = 'block';
+                    individualFields.style.display = 'none';
+                    // Clear individual fields
+                    departmentSelect.value = '';
+                    employeeSelect.value = '';
+                    employeeSelect.innerHTML = '<option value="">-- Select Employee --</option>';
+                } else {
+                    groupFields.style.display = 'none';
+                    individualFields.style.display = 'block';
+                    // Clear group fields
+                    groupSelect.value = '';
+                    // If a company is already selected and departments are still empty, load them
+                    if (companySelect.value && departmentSelect.options.length <= 1) {
+                        console.log('Switched to Individual; reloading departments for company', companySelect.value);
+                        companySelect.dispatchEvent(new Event('change'));
+                    }
+                }
+            }
+
+            typeGroup.addEventListener('change', toggleFields);
+            typeIndividual.addEventListener('change', toggleFields);
+
+            // Load groups when company changes
+            companySelect.addEventListener('change', async function() {
+                const companyId = this.value;
+                if (!companyId) {
+                    groupSelect.innerHTML = '<option value="">-- Select Group --</option>';
+                    departmentSelect.innerHTML = '<option value="">-- Select Department --</option>';
+                    employeeSelect.innerHTML = '<option value="">-- Select Employee --</option>';
+                    return;
+                }
+
+                try {
+                    // Load groups
+                    const groupsUrl = `/SuperUser/AssignRole/GetGroupsByCompany?companyId=${encodeURIComponent(companyId)}`;
+                    console.log('Loading groups from', groupsUrl);
+                    const groupsResponse = await fetch(groupsUrl, { credentials: 'same-origin' });
+                    if (!groupsResponse.ok) { console.error('Groups request failed', groupsResponse.status, groupsResponse.statusText); return; }
+                    const groups = await groupsResponse.json();
+                    console.log('Loaded groups:', groups);
+                    groupSelect.innerHTML = '<option value="">-- Select Group --</option>';
+                    groups.forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g.id;
+                        opt.textContent = g.name;
+                        groupSelect.appendChild(opt);
+                    });
+
+                    // Load departments
+                    const deptsUrl = `/SuperUser/AssignRole/GetDepartmentsByCompany?companyId=${encodeURIComponent(companyId)}`;
+                    console.log('Loading departments from', deptsUrl);
+                    const deptsResponse = await fetch(deptsUrl, { credentials: 'same-origin' });
+                    if (!deptsResponse.ok) { console.error('Departments request failed', deptsResponse.status, deptsResponse.statusText); return; }
+                    const departments = await deptsResponse.json();
+                    console.log('Loaded departments:', departments);
+                    departmentSelect.innerHTML = '<option value="">-- Select Department --</option>';
+                    departments.forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d.id;
+                        opt.textContent = d.name;
+                        departmentSelect.appendChild(opt);
+                    });
+
+                    // Clear employee dropdown
+                    employeeSelect.innerHTML = '<option value="">-- Select Employee --</option>';
+                } catch (error) {
+                    console.error('Error loading groups/departments:', error);
+                }
+            });
+
+            // Load employees when department changes
+            departmentSelect.addEventListener('change', async function() {
+                const departmentId = this.value;
+                if (!departmentId) {
+                    employeeSelect.innerHTML = '<option value="">-- Select Employee --</option>';
+                    return;
+                }
+
+                try {
+                    const empsUrl = `/SuperUser/AssignRole/GetEmployeesByDepartment?departmentId=${encodeURIComponent(departmentId)}`;
+                    console.log('Loading employees from', empsUrl);
+                    const response = await fetch(empsUrl, { credentials: 'same-origin' });
+                    if (!response.ok) { console.error('Employees request failed', response.status, response.statusText); return; }
+                    const employees = await response.json();
+                    console.log('Loaded employees:', employees);
+                    employeeSelect.innerHTML = '<option value="">-- Select Employee --</option>';
+                    employees.forEach(e => {
+                        const opt = document.createElement('option');
+                        opt.value = e.id;
+                        opt.textContent = `${e.name} (${e.employeeNo})`;
+                        employeeSelect.appendChild(opt);
+                    });
+                } catch (error) {
+                    console.error('Error loading employees:', error);
+                }
+            });
+
+            // Initialize
+            toggleFields();
+        });
+    </script>
+}
+</section>

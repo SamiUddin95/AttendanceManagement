@@ -1,0 +1,203 @@
+@model AttendanceManagement.Web.ViewModels.MarkDays.MarkDayViewModel
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Edit Mark Day" : "Create Mark Day";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+@*     <div>
+        <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit Mark Day" : "Create Mark Day")</h2>
+        <small class="text-muted">Mark days with specific status for employee groups</small>
+    </div> *@
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post">
+    @Html.AntiForgeryToken()
+    @if (Model.Id > 0)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <div class="row g-4">
+        <!-- Left Column - Basic Information -->
+        <div class="col-lg-8">
+            <!-- Group Selection Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-people me-2 text-primary"></i>Group Selection</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="CompanyId" class="form-label fw-semibold">Company</label>
+                            <input type="text" class="form-control bg-light" value="@Model.CompanyName" disabled />
+                            <input type="hidden" asp-for="CompanyId" />
+                            <small class="text-muted">Company is read-only</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="GroupId" class="form-label fw-semibold">Group</label>
+                            <select asp-for="GroupId" class="form-select" required>
+                                <option value="">-- Select Group --</option>
+                                @foreach (var group in Model.AvailableGroups)
+                                {
+                                    <option value="@group.Id" selected="@(Model.GroupId == group.Id)">@group.Name (@group.Code)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="GroupId" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Range Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-calendar-range me-2 text-primary"></i>Date Range</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="FromDate" class="form-label fw-semibold">From Date</label>
+                            <input asp-for="FromDate" type="date" class="form-control" min="2020-01-01" max="2030-12-31" required />
+                            <span asp-validation-for="FromDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="ToDate" class="form-label fw-semibold">To Date</label>
+                            <input asp-for="ToDate" type="date" class="form-control" min="2020-01-01" max="2030-12-31" required />
+                            <span asp-validation-for="ToDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="TotalDays" class="form-label fw-semibold">Total Days</label>
+                            <input asp-for="TotalDays" type="number" class="form-control bg-light" readonly />
+                            <small class="text-muted">Auto-calculated</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Status & Actions -->
+        <div class="col-lg-4">
+            <!-- Status Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0"><i class="bi bi-flag me-2 text-primary"></i>Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" asp-for="IsOn" />
+                            <label class="form-check-label fw-semibold">ON</label>
+                        </div>
+                        <small class="text-muted d-block ms-4">Mark days as working days</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" asp-for="IsOff" />
+                            <label class="form-check-label fw-semibold">OFF</label>
+                        </div>
+                        <small class="text-muted d-block ms-4">Mark days as off days</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" asp-for="IsGazettedHoliday" />
+                            <label class="form-check-label fw-semibold">Gazetted Holiday</label>
+                        </div>
+                        <small class="text-muted d-block ms-4">National gazetted holidays</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" asp-for="IsProvincialHoliday" />
+                            <label class="form-check-label fw-semibold">Provincial Holiday</label>
+                        </div>
+                        <small class="text-muted d-block ms-4">Provincial/Regional holidays</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" asp-for="IsStrike" />
+                            <label class="form-check-label fw-semibold">Strike</label>
+                        </div>
+                        <small class="text-muted d-block ms-4">Strike days</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" asp-for="IsEid" />
+                            <label class="form-check-label fw-semibold">Eid</label>
+                        </div>
+                        <small class="text-muted d-block ms-4">Eid holidays</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="info-icon bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-semibold mb-2">Important Note</h6>
+                            <p class="mb-0 small text-muted">
+                                Days will not be marked for Inactive or Resigned employees. Only active employees will be affected by this marking.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-x-lg me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-check-lg me-2"></i>@(Model.Id > 0 ? "Update" : "Create")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Auto-calculate total days when dates change
+        document.addEventListener('DOMContentLoaded', function() {
+            const fromDate = document.getElementById('FromDate');
+            const toDate = document.getElementById('ToDate');
+            const totalDays = document.getElementById('TotalDays');
+
+            function calculateDays() {
+                if (fromDate.value && toDate.value) {
+                    const start = new Date(fromDate.value);
+                    const end = new Date(toDate.value);
+                    const diffTime = end - start;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    totalDays.value = diffDays > 0 ? diffDays : 0;
+                }
+            }
+
+            fromDate.addEventListener('change', calculateDays);
+            toDate.addEventListener('change', calculateDays);
+        });
+    </script>
+}
+
+<style>
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+</style>

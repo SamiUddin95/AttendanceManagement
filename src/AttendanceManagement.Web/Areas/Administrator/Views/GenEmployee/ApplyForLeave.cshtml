@@ -1,0 +1,240 @@
+@model AttendanceManagement.Web.ViewModels.ApplyLeave.ApplyLeaveViewModel
+@{
+    ViewData["Title"] = "Apply for Leave";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">Apply for Leave</h2>
+        <small class="text-muted">Submit a new leave application</small>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@successMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- Leave Application Form -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light py-3">
+                <h5 class="mb-0"><i class="bi bi-calendar-plus me-2 text-primary"></i>Leave Application Form</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="ApplyForLeave" method="post">
+                    @Html.AntiForgeryToken()
+                    
+                    <!-- Employee Info -->
+                    <div class="row g-3 mb-4 p-3 bg-light rounded">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Employee Name</label>
+                            <div class="fw-semibold">@Model.EmployeeName</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Employee No</label>
+                            <div class="fw-semibold">@Model.EmployeeNo</div>
+                        </div>
+                    </div>
+
+                    <!-- Leave Type -->
+                    <div class="mb-3">
+                        <label asp-for="SelectedLeaveType" class="form-label fw-semibold">Leave Type <span class="text-danger">*</span></label>
+                        <select asp-for="SelectedLeaveType" asp-items="Model.LeaveTypeOptions" class="form-select" required>
+                            <option value="">-- Select Leave Type --</option>
+                        </select>
+                        <span asp-validation-for="SelectedLeaveType" class="text-danger"></span>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="FromDate" class="form-label fw-semibold">From Date <span class="text-danger">*</span></label>
+                            <input asp-for="FromDate" type="date" class="form-control" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required />
+                            <span asp-validation-for="FromDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ToDate" class="form-label fw-semibold">To Date <span class="text-danger">*</span></label>
+                            <input asp-for="ToDate" type="date" class="form-control" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required />
+                            <span asp-validation-for="ToDate" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <!-- Total Days Display -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Total Days</label>
+                        <div class="form-control-plaintext fw-bold fs-5 text-primary" id="totalDaysDisplay">@Model.TotalDays day(s)</div>
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="mb-3">
+                        <label asp-for="Reason" class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+                        <textarea asp-for="Reason" class="form-control" rows="3" required placeholder="Enter reason for leave..."></textarea>
+                        <span asp-validation-for="Reason" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-send me-2"></i>Submit Application
+                        </button>
+                        <a asp-action="LeaveHistory" class="btn btn-outline-secondary flex-grow-1">
+                            <i class="bi bi-clock-history me-2"></i>View History
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Balance Sidebar -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light py-3">
+                <h5 class="mb-0"><i class="bi bi-pie-chart me-2 text-primary"></i>Your Leave Balances</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.LeaveBalances.Any())
+                {
+                    @foreach (var balance in Model.LeaveBalances)
+                    {
+                        var usagePercent = balance.EntitledDays > 0 ? (double)balance.UsedDays / balance.EntitledDays * 100 : 0;
+                        var progressClass = usagePercent >= 90 ? "bg-danger" : (usagePercent >= 70 ? "bg-warning" : "bg-success");
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-semibold">@balance.LeaveType</span>
+                                <span class="badge @progressClass">@usagePercent.ToString("F0")%</span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar @progressClass" role="progressbar" style="width: @Math.Min(usagePercent, 100)%" aria-valuenow="@usagePercent" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="d-flex justify-content-between small mt-1">
+                                <span class="text-success"><i class="bi bi-check-circle me-1"></i>@balance.RemainingDays left</span>
+                                <span class="text-danger"><i class="bi bi-x-circle me-1"></i>@balance.UsedDays used</span>
+                            </div>
+                            @if (balance.CarryForward)
+                            {
+                                <div class="small text-success mt-1"><i class="bi bi-arrow-repeat me-1"></i>Carry forward allowed</div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-3 text-muted">
+                        <i class="bi bi-info-circle fs-1 d-block mb-2"></i>
+                        <p class="mb-0 small">No leave policy assigned</p>
+                        <small>Contact HR to assign a leave policy</small>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Guidelines Card -->
+        <div class="card shadow-sm mt-3 border-info">
+            <div class="card-header bg-info bg-opacity-10">
+                <h6 class="mb-0 text-info"><i class="bi bi-lightbulb me-2"></i>Guidelines</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0 small">
+                    <li>Apply at least 3 days in advance</li>
+                    <li>From date cannot be in the past</li>
+                    <li>Cannot exceed available leave balance</li>
+                    <li>Emergency leave: notify within 24 hours</li>
+                    <li>Attach supporting documents if required</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Type Balance Details -->
+@if (Model.LeaveBalances.Any())
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-table me-2 text-primary"></i>Leave Balance Details</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Leave Type</th>
+                            <th class="text-center">Entitled</th>
+                            <th class="text-center">Used</th>
+                            <th class="text-center">Remaining</th>
+                            <th class="text-center">Carry Forward</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var balance in Model.LeaveBalances)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info">@balance.LeaveType</span>
+                                </td>
+                                <td class="text-center fw-semibold">@balance.EntitledDays</td>
+                                <td class="text-center text-danger">@balance.UsedDays</td>
+                                <td class="text-center text-success fw-semibold">@balance.RemainingDays</td>
+                                <td class="text-center">
+                                    @if (balance.CarryForward)
+                                    {
+                                        <span class="badge bg-success-subtle text-success"><i class="bi bi-check me-1"></i>Yes</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-x me-1"></i>No</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fromDate = document.querySelector('input[name="FromDate"]');
+            const toDate = document.querySelector('input[name="ToDate"]');
+            const totalDaysDisplay = document.getElementById('totalDaysDisplay');
+
+            function updateTotalDays() {
+                if (fromDate.value && toDate.value) {
+                    const from = new Date(fromDate.value);
+                    const to = new Date(toDate.value);
+                    const diff = Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+                    totalDaysDisplay.textContent = diff > 0 ? `${diff} day(s)` : '1 day(s)';
+                }
+            }
+
+            fromDate.addEventListener('change', function() {
+                if (toDate.value && new Date(fromDate.value) > new Date(toDate.value)) {
+                    toDate.value = fromDate.value;
+                }
+                toDate.min = fromDate.value;
+                updateTotalDays();
+            });
+
+            toDate.addEventListener('change', updateTotalDays);
+            
+            updateTotalDays();
+        });
+    </script>
+}

@@ -1,0 +1,170 @@
+@model AttendanceManagement.Web.ViewModels.AssignGroups.AssignGroupListViewModel
+@{
+    ViewData["Title"] = "Assign Group";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+   @*  <div>
+        <h2 class="h4 mb-1">Assign Group</h2>
+        <small class="text-muted">Assign groups to employees with specific criteria</small>
+    </div> *@
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>New Assignment
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text bg-light">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Search by group name, code..." />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Group</th>
+                        <th>Company</th>
+                        <th>Employee Type</th>
+                        <th>Location</th>
+                        <th>Department</th>
+                        <th>Incharge</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.AssignGroups != null && Model.AssignGroups.Any())
+                    {
+                        @foreach (var assignGroup in Model.AssignGroups)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="assign-avatar me-3">
+                                            <i class="bi bi-people-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">@assignGroup.GroupName</div>
+                                            <small class="text-muted">ID: @assignGroup.Id</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-building text-muted small"></i>
+                                        <span>@assignGroup.CompanyName</span>
+                                    </div>
+                                </td>
+                                <td>@assignGroup.EmployeeType</td>
+                                <td>@assignGroup.LocationId</td>
+                                <td>@assignGroup.DepartmentId</td>
+                                <td>
+                                    <div class="small">
+                                        @if (assignGroup.InchargeEmployeeId.HasValue)
+                                        {
+                                            <span class="text-primary">Employee Assigned</span>
+                                        }
+                                        else if (assignGroup.InchargeDesignationId.HasValue)
+                                        {
+                                            <span class="text-info">Designation Assigned</span>
+                                        }
+                                        else if (assignGroup.InchargeCategoryId.HasValue)
+                                        {
+                                            <span class="text-warning">Category Assigned</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Not Assigned</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (assignGroup.IsActive)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check-circle me-1"></i>Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                            <i class="bi bi-circle me-1"></i>Inactive
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        <a asp-action="Edit" asp-route-id="@assignGroup.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@assignGroup.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this assignment?');">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    <p class="mb-0">No group assignments found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .assign-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+    }
+
+    .badge {
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+    }
+</style>

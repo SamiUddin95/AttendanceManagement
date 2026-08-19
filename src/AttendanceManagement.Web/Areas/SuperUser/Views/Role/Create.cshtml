@@ -1,0 +1,211 @@
+@model AttendanceManagement.Web.ViewModels.SuperUser.RoleViewModel
+@{
+    ViewData["Title"] = Model.Id > 0 ? "Edit Role" : "Create Role";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit" : "Create") Role</h2>
+        <small class="text-muted">@(Model.Id > 0 ? "Update role and module permissions" : "Define a new role with module permissions")</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@successMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post">
+    @Html.AntiForgeryToken()
+    @if (Model.Id > 0)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+
+    <!-- Basic Info -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-info-circle me-2 text-primary"></i>Role Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Name" class="form-label fw-semibold">Role Name <span class="text-danger">*</span></label>
+                    <input asp-for="Name" class="form-control" placeholder="e.g., HR_Manager, Supervisor" required />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                    <small class="text-muted">Unique identifier (no spaces)</small>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="DisplayName" class="form-label fw-semibold">Display Name</label>
+                    <input asp-for="DisplayName" class="form-control" placeholder="e.g., HR Manager" />
+                    <span asp-validation-for="DisplayName" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Describe the role purpose..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check form-switch mt-4">
+                        <input asp-for="IsActive" class="form-check-input" role="switch" />
+                        <label class="form-check-label fw-semibold" asp-for="IsActive">Active</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Permissions -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-grid me-2 text-primary"></i>Module Permissions</h5>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-secondary" id="selectAllView" title="Select All View">
+                    <i class="bi bi-eye"></i> View All
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="clearAll" title="Clear All">
+                    <i class="bi bi-x-lg"></i> Clear All
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 30%;">Module</th>
+                            <th style="width: 20%;">Description</th>
+                            <th class="text-center" style="width: 12%;">
+                                <i class="bi bi-eye" title="View"></i>
+                            </th>
+                            <th class="text-center" style="width: 12%;">
+                                <i class="bi bi-plus" title="Create"></i>
+                            </th>
+                            <th class="text-center" style="width: 12%;">
+                                <i class="bi bi-pencil" title="Edit"></i>
+                            </th>
+                            <th class="text-center" style="width: 12%;">
+                                <i class="bi bi-trash" title="Delete"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.RoleModules.Count; i++)
+                        {
+                            var rm = Model.RoleModules[i];
+                            <tr>
+                                <td>
+                                    <input type="hidden" asp-for="@Model.RoleModules[i].ModuleId" />
+                                    <input type="hidden" asp-for="@Model.RoleModules[i].ModuleName" />
+                                    <input type="hidden" asp-for="@Model.RoleModules[i].ModuleDisplayName" />
+                                    <strong>@rm.ModuleDisplayName</strong>
+                                    <br />
+                                    <small class="text-muted">@rm.ModuleName</small>
+                                </td>
+                                <td class="text-muted small">
+                                    @Model.AvailableModules.FirstOrDefault(m => m.Id == rm.ModuleId)?.Description
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" asp-for="@Model.RoleModules[i].CanView" class="form-check-input permission-check" data-permission="view" />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" asp-for="@Model.RoleModules[i].CanCreate" class="form-check-input permission-check" data-permission="create" />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" asp-for="@Model.RoleModules[i].CanEdit" class="form-check-input permission-check" data-permission="edit" />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" asp-for="@Model.RoleModules[i].CanDelete" class="form-check-input permission-check" data-permission="delete" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-2"></i>@(Model.Id > 0 ? "Update" : "Create") Role
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg me-2"></i>Cancel
+        </a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // View checkbox enables/disables other permissions
+            document.querySelectorAll('.permission-check[data-permission="view"]').forEach(function(viewCheck) {
+                viewCheck.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    const createCheck = row.querySelector('.permission-check[data-permission="create"]');
+                    const editCheck = row.querySelector('.permission-check[data-permission="edit"]');
+                    const deleteCheck = row.querySelector('.permission-check[data-permission="delete"]');
+                    
+                    if (!this.checked) {
+                        createCheck.checked = false;
+                        editCheck.checked = false;
+                        deleteCheck.checked = false;
+                        createCheck.disabled = true;
+                        editCheck.disabled = true;
+                        deleteCheck.disabled = true;
+                    } else {
+                        createCheck.disabled = false;
+                        editCheck.disabled = false;
+                        deleteCheck.disabled = false;
+                    }
+                });
+                
+                // Initialize state
+                if (!viewCheck.checked) {
+                    const row = viewCheck.closest('tr');
+                    row.querySelectorAll('.permission-check:not([data-permission="view"])').forEach(function(c) {
+                        c.disabled = true;
+                    });
+                }
+            });
+
+            // Select All View
+            document.getElementById('selectAllView')?.addEventListener('click', function() {
+                document.querySelectorAll('.permission-check[data-permission="view"]').forEach(function(c) {
+                    if (!c.checked) {
+                        c.checked = true;
+                        c.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+
+            // Clear All
+            document.getElementById('clearAll')?.addEventListener('click', function() {
+                document.querySelectorAll('.permission-check').forEach(function(c) {
+                    c.checked = false;
+                    if (c.dataset.permission === 'view') {
+                        c.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        });
+    </script>
+}
+</section>

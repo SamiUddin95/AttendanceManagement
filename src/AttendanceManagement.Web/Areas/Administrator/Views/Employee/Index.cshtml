@@ -4,10 +4,10 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
+  @*   <div>
         <h2 class="h4 mb-1">Employee Directory</h2>
         <small class="text-muted">Manage all employees</small>
-    </div>
+    </div> *@
     <a asp-action="Create" class="btn btn-primary">
         <i class="bi bi-plus-lg me-2"></i>Add Employee
     </a>
@@ -54,6 +54,7 @@
                         <th>Designation</th>
                         <th>Type</th>
                         <th>Cell</th>
+                        <th>Password</th>
                         <th>Status</th>
                         <th class="text-end pe-4">Actions</th>
                     </tr>
@@ -89,6 +90,20 @@
                                 <td>@employee.EmployeeType</td>
                                 <td>@employee.Cell</td>
                                 <td>
+                                    @if (!string.IsNullOrWhiteSpace(employee.Password))
+                                    {
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bi bi-shield-lock me-1"></i>Set
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning">
+                                            <i class="bi bi-shield-lock-open me-1"></i>Not Set
+                                        </span>
+                                    }
+                                </td>
+                                <td>
                                     @if (employee.IsActive)
                                     {
                                         <span class="badge bg-success-subtle text-success border border-success-subtle">
@@ -121,7 +136,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="9" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5">
                                 <div class="text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                     <p class="mb-0">No employees found</p>

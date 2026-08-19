@@ -1,0 +1,190 @@
+@model AttendanceManagement.Web.ViewModels.Calendar.CalendarViewModel
+@{
+    ViewData["Title"] = "View Calendar";
+    var monthName = Model.CurrentMonth switch
+    {
+        1 => "January", 2 => "February", 3 => "March", 4 => "April",
+        5 => "May", 6 => "June", 7 => "July", 8 => "August",
+        9 => "September", 10 => "October", 11 => "November", 12 => "December",
+        _ => "Unknown"
+    };
+    var daysInMonth = DateTime.DaysInMonth(Model.CurrentYear, Model.CurrentMonth);
+    var firstDayOfWeek = (int)new DateTime(Model.CurrentYear, Model.CurrentMonth, 1).DayOfWeek;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">View Calendar</h2>
+        <small class="text-muted">View holidays, leave dates, and events</small>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Month/Year Selector -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Month</label>
+                <select name="month" class="form-select" onchange="this.form.submit()" asp-items="Model.MonthOptions">
+                    <option value="">-- Select Month --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Year</label>
+                <select name="year" class="form-select" onchange="this.form.submit()" asp-items="Model.YearOptions">
+                    <option value="">-- Select Year --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <a href="?month=@DateTime.Now.Month&year=@DateTime.Now.Year" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-calendar-today me-2"></i>Current Month
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Calendar Header -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-calendar-month me-2"></i>@monthName @Model.CurrentYear</h5>
+        <div class="d-flex gap-2">
+            <span class="badge bg-light text-dark">@Model.Events.Count events</span>
+        </div>
+    </div>
+</div>
+
+<!-- Calendar Grid -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0 calendar-table">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center">Sun</th>
+                        <th class="text-center">Mon</th>
+                        <th class="text-center">Tue</th>
+                        <th class="text-center">Wed</th>
+                        <th class="text-center">Thu</th>
+                        <th class="text-center">Fri</th>
+                        <th class="text-center">Sat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var day = 1;
+                        for (var week = 0; week < 6; week++)
+                        {
+                            if (day > daysInMonth) break;
+                            <tr>
+                                @for (var dow = 0; dow < 7; dow++)
+                                {
+                                    if ((week == 0 && dow < firstDayOfWeek) || day > daysInMonth)
+                                    {
+                                        <td class="text-muted bg-light" style="min-height: 100px;"></td>
+                                    }
+                                    else
+                                    {
+                                        var currentDate = new DateTime(Model.CurrentYear, Model.CurrentMonth, day);
+                                        var dayEvents = Model.Events.Where(e => e.Date.Date == currentDate.Date).ToList();
+                                        var isToday = currentDate.Date == DateTime.Today;
+                                        var isWeekend = dow == 0 || dow == 6;
+                                        
+                                        <td class="@(isToday ? "today" : "") @(isWeekend ? "weekend" : "")" style="min-height: 100px; vertical-align: top;">
+                                            <div class="d-flex justify-content-between">
+                                                <span class="fw-semibold @(isToday ? "text-primary" : "")">@day</span>
+                                                @if (isToday)
+                                                {
+                                                    <span class="badge bg-primary rounded-pill">Today</span>
+                                                }
+                                            </div>
+                                            @foreach (var evt in dayEvents)
+                                            {
+                                                <div class="mt-1">
+                                                    <span class="badge" style="background-color: @evt.Color; font-size: 0.65rem;">
+                                                        @evt.Title
+                                                    </span>
+                                                </div>
+                                            }
+                                        </td>
+                                    }
+                                    day++;
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Events List -->
+@if (Model.Events.Any())
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-list-ul me-2 text-primary"></i>Events This Month</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                @foreach (var evt in Model.Events.OrderBy(e => e.Date))
+                {
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-start">
+                            <div class="me-3" style="width: 12px; height: 12px; border-radius: 50%; background-color: @evt.Color; margin-top: 4px;"></div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">@evt.Title</div>
+                                <small class="text-muted">@evt.Date.ToString("dd MMM yyyy") @(evt.Type == "Leave" ? "• Leave" : evt.Type == "Holiday" ? "• Holiday" : "• Birthday")</small>
+                                @if (!string.IsNullOrWhiteSpace(evt.Description))
+                                {
+                                    <div class="small text-muted mt-1">@evt.Description</div>
+                                }
+                            </div>
+                            <span class="badge bg-light text-dark">@evt.Type</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-body text-center py-5">
+            <div class="text-muted">
+                <i class="bi bi-calendar-event fs-1 d-block mb-2"></i>
+                <p class="mb-0">No events this month</p>
+                <small class="text-muted">Holidays, approved leaves, and birthdays will appear here</small>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .calendar-table td {
+        border: 1px solid #dee2e6;
+        transition: background-color 0.2s;
+    }
+    .calendar-table td.today {
+        background-color: #e7f1ff !important;
+    }
+    .calendar-table td.weekend {
+        background-color: #f8f9fa;
+    }
+    .calendar-table td:hover {
+        background-color: #e9ecef;
+    }
+    .calendar-table th {
+        border: 1px solid #dee2e6;
+    }
+</style>

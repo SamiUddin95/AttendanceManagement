@@ -4,10 +4,10 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
+    @* <div>
         <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit Group" : "Create Group")</h2>
         <small class="text-muted">Configure group settings and employee filters</small>
-    </div>
+    </div> *@
     <a asp-action="Index" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-2"></i>Back to List
     </a>
@@ -127,6 +127,65 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Employee Assignment Card -->
+            @if (Model.Id > 0)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Employee Assignment</h5>
+                        <span class="badge bg-primary">@Model.GroupEmployees.Count employees</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-8">
+                                <input type="text" id="employeeSearch" class="form-control" placeholder="Search employees by name or employee no..." value="@Model.EmployeeSearch" />
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" id="searchEmployeesBtn" class="btn btn-outline-primary w-100">
+                                    <i class="bi bi-search me-2"></i>Search
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 50px;">
+                                            <input type="checkbox" id="selectAllEmployees" class="form-check-input" />
+                                        </th>
+                                        <th>Emp No</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Designation</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeeTableBody">
+                                    @foreach (var employee in Model.GroupEmployees)
+                                    {
+                                        <tr class="employee-row" data-name="@employee.Name.ToLower()" data-empno="@employee.EmployeeNo.ToLower()">
+                                            <td>
+                                                <input type="checkbox" class="form-check-input employee-checkbox" 
+                                                       name="SelectedEmployeeIds" value="@employee.EmployeeId" 
+                                                       @(Model.SelectedEmployeeIds.Contains(employee.EmployeeId) ? "checked" : "") />
+                                            </td>
+                                            <td class="fw-semibold">@employee.EmployeeNo</td>
+                                            <td>@employee.Name</td>
+                                            <td>@employee.Department</td>
+                                            <td>@employee.Designation</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <span id="selectedEmployeeCount">@Model.SelectedEmployeeIds.Count</span> employee(s) selected
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
 
         <!-- Right Column - Multi-Select Filters & Status -->
@@ -295,6 +354,60 @@
                 filterByIncharge.addEventListener('change', function() {
                     inchargeContainer.classList.toggle('d-none', !this.checked);
                 });
+            }
+
+            // Employee search functionality
+            const employeeSearch = document.getElementById('employeeSearch');
+            const searchEmployeesBtn = document.getElementById('searchEmployeesBtn');
+            const employeeRows = document.querySelectorAll('.employee-row');
+
+            function filterEmployees() {
+                const searchTerm = employeeSearch.value.toLowerCase();
+                employeeRows.forEach(row => {
+                    const name = row.getAttribute('data-name');
+                    const empNo = row.getAttribute('data-empno');
+                    const matches = name.includes(searchTerm) || empNo.includes(searchTerm);
+                    row.style.display = matches ? '' : 'none';
+                });
+            }
+
+            if (searchEmployeesBtn) {
+                searchEmployeesBtn.addEventListener('click', filterEmployees);
+            }
+
+            if (employeeSearch) {
+                employeeSearch.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter') {
+                        filterEmployees();
+                    }
+                });
+            }
+
+            // Select all employees functionality
+            const selectAllEmployees = document.getElementById('selectAllEmployees');
+            const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
+            const selectedEmployeeCount = document.getElementById('selectedEmployeeCount');
+
+            if (selectAllEmployees) {
+                selectAllEmployees.addEventListener('change', function() {
+                    employeeCheckboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                    updateSelectedCount();
+                });
+            }
+
+            employeeCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    updateSelectedCount();
+                });
+            });
+
+            function updateSelectedCount() {
+                const count = document.querySelectorAll('.employee-checkbox:checked').length;
+                if (selectedEmployeeCount) {
+                    selectedEmployeeCount.textContent = count;
+                }
             }
         });
     </script>

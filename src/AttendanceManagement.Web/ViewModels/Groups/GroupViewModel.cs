@@ -57,6 +57,20 @@ public class GroupViewModel
     public List<LocationSelectItem> AvailableLocations { get; set; } = new();
     public List<DesignationSelectItem> AvailableDesignations { get; set; } = new();
     public List<EmployeeSelectItem> AvailableIncharges { get; set; } = new();
+
+    // Employee assignment
+    public List<GroupEmployeeItem> GroupEmployees { get; set; } = new();
+    public List<int> SelectedEmployeeIds { get; set; } = new();
+    public string? EmployeeSearch { get; set; }
+}
+
+public class GroupEmployeeItem
+{
+    public int EmployeeId { get; set; }
+    public string EmployeeNo { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Department { get; set; }
+    public string? Designation { get; set; }
 }
 
 public class DepartmentSelectItem

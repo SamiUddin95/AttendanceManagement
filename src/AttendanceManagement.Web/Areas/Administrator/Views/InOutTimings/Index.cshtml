@@ -1,0 +1,249 @@
+@model AttendanceManagement.Web.ViewModels.InOutTimings.InOutTimingsViewModel
+@{
+    ViewData["Title"] = "In Out Timings";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">In Out Timings</h2>
+        <small class="text-muted">View attendance In/Out timings report</small>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@successMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Employee Info Card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-person me-2 text-primary"></i>Employee Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Employee Name:</strong> @Model.EmployeeName
+            </div>
+            <div class="col-md-4">
+                <strong>Employee No:</strong> @Model.EmployeeNo
+            </div>
+            <div class="col-md-4">
+                <strong>Total Records:</strong> @Model.InOutTimingsItems.Count
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search/Filter Card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Report Filters</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Search" method="post" class="row g-3">
+            @Html.AntiForgeryToken()
+            
+            <!-- Month Dropdown -->
+            <div class="col-md-3">
+                <label asp-for="SelectedMonth" class="form-label fw-semibold">Month</label>
+                <select asp-for="SelectedMonth" class="form-select" required>
+                    <option value="">-- Select Month --</option>
+                    @foreach (var month in Model.AvailableMonths)
+                    {
+                        <option value="@month.Value" selected="@(Model.SelectedMonth == month.Value)">@month.Name</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Year Dropdown -->
+            <div class="col-md-3">
+                <label asp-for="SelectedYear" class="form-label fw-semibold">Year</label>
+                <select asp-for="SelectedYear" class="form-select" required>
+                    <option value="">-- Select Year --</option>
+                    @foreach (var year in Model.AvailableYears)
+                    {
+                        <option value="@year" selected="@(Model.SelectedYear == year)">@year</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Report Type Checkboxes -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Report Type</label>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="payrollWise" name="IsPayrollWise" 
+                                   @(Model.IsPayrollWise ? "checked" : "") value="true" />
+                            <label class="form-check-label fw-semibold" for="payrollWise">
+                                <i class="bi bi-calculator me-1"></i>Payroll Wise
+                            </label>
+                            <input type="hidden" name="IsPayrollWise" value="false" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" class="form-check-input" id="monthWise" name="IsMonthWise" 
+                                   @(Model.IsMonthWise ? "checked" : "") value="true" />
+                            <label class="form-check-label fw-semibold" for="monthWise">
+                                <i class="bi bi-calendar-month me-1"></i>Month Wise
+                            </label>
+                            <input type="hidden" name="IsMonthWise" value="false" />
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted">Select one or both report types</small>
+            </div>
+
+            <!-- Search Button -->
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>Generate Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Report Header -->
+@if (Model.InOutTimingsItems.Any())
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1"><i class="bi bi-clock-history me-2"></i>In/Out Report - @Model.MonthYearDisplay</h5>
+                    <small>Report Type: @Model.ReportTypeDisplay</small>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark fs-6">@Model.InOutTimingsItems.Count days</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In/Out Timings Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;">Sr#</th>
+                            <th>Date</th>
+                            <th style="width: 150px;">Time In</th>
+                            <th style="width: 150px;">Time Out</th>
+                            <th style="width: 150px;">Extra Hours</th>
+                            <th style="width: 180px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.InOutTimingsItems)
+                        {
+                            <tr>
+                                <td class="fw-semibold text-center">@item.SrNo</td>
+                                <td>@item.Date.ToString("dd MMM yyyy")</td>
+                                <td>
+                                    @if (item.TimeIn.HasValue)
+                                    {
+                                        <span class="fw-semibold text-success">@item.TimeIn.Value.ToString(@"hh\:mm")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">--:--</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.TimeOut.HasValue)
+                                    {
+                                        <span class="fw-semibold text-danger">@item.TimeOut.Value.ToString(@"hh\:mm")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">--:--</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.ExtraHours.HasValue && item.ExtraHours.Value > TimeSpan.Zero)
+                                    {
+                                        <span class="badge bg-warning text-dark fw-semibold">
+                                            @item.ExtraHours.Value.ToString(@"hh\:mm")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">--:--</span>
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        var statusClass = item.Status switch
+                                        {
+                                            "Present" => "bg-success",
+                                            "Absent" => "bg-danger",
+                                            "Half Day" => "bg-warning",
+                                            "Half Day (No Out)" => "bg-info",
+                                            "Half Day (No In)" => "bg-info",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @statusClass">@item.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Empty State -->
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                <p class="mb-0">No attendance records found</p>
+                <small class="text-muted">Select month/year and click Generate Report</small>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure only one report type can be selected at a time (radio-like behavior for checkboxes)
+            const payrollWise = document.getElementById('payrollWise');
+            const monthWise = document.getElementById('monthWise');
+
+            if (payrollWise && monthWise) {
+                payrollWise.addEventListener('change', function() {
+                    if (this.checked) {
+                        monthWise.checked = false;
+                    }
+                });
+
+                monthWise.addEventListener('change', function() {
+                    if (this.checked) {
+                        payrollWise.checked = false;
+                    }
+                });
+            }
+        });
+    </script>
+}

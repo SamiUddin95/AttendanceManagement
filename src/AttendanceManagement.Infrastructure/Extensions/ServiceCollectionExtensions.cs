@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILookupBoardService, LookupBoardService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IShiftService, ShiftService>();
+        services.AddScoped<IUserModuleService, UserModuleService>();
 
         return services;
     }
