@@ -34,6 +34,7 @@ public class AttendanceDbContext : DbContext
     public DbSet<GroupEmployee> GroupEmployees => Set<GroupEmployee>();
     public DbSet<Attendance> Attendances => Set<Attendance>();
     public DbSet<EmployeeCalendarDay> EmployeeCalendarDays => Set<EmployeeCalendarDay>();
+    public DbSet<EmployeeShiftSchedule> EmployeeShiftSchedules => Set<EmployeeShiftSchedule>();
     public DbSet<Module> Modules => Set<Module>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<RoleModule> RoleModules => Set<RoleModule>();
@@ -419,6 +420,34 @@ public class AttendanceDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.UpdatedByEmployee)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByEmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<EmployeeShiftSchedule>(entity =>
+        {
+            entity.ToTable("EmployeeShiftSchedules");
+            entity.Property(e => e.EffectiveFrom).HasColumnType("date");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasIndex(e => new { e.EmployeeId, e.EffectiveFrom }).IsUnique();
+            entity.HasOne(e => e.Company)
+                .WithMany()
+                .HasForeignKey(e => e.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Employee)
+                .WithMany()
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Shift)
+                .WithMany()
+                .HasForeignKey(e => e.ShiftId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.CreatedByEmployee)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByEmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.UpdatedByEmployee)
                 .WithMany()
                 .HasForeignKey(e => e.UpdatedByEmployeeId)

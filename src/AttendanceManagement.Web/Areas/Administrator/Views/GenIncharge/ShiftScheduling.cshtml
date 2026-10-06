@@ -1,0 +1,427 @@
+@model AttendanceManagement.Web.ViewModels.GenIncharge.ShiftSchedulingViewModel
+@{
+    ViewData["Title"] = "Shift Scheduling";
+    var shiftsJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Shifts.Select(s => new { id = s.Id, name = s.Name, display = s.Display, isActive = s.IsActive }));
+}
+
+@Html.AntiForgeryToken()
+
+@if (TempData["ErrorMessage"] is string errorMsg)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMsg
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+<div id="ssAlert"></div>
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small mb-0">
+        <li class="breadcrumb-item"><a asp-area="Administrator" asp-controller="Dashboard" asp-action="Index">Home</a></li>
+        <li class="breadcrumb-item">Incharge</li>
+        <li class="breadcrumb-item active" aria-current="page">Shift Scheduling</li>
+    </ol>
+</nav>
+
+<!-- ═══════════════════  SELECTION  ═══════════════════ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0 fw-semibold">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Shift Scheduling
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="ssEmployee" class="form-label fw-semibold">
+                    Employee <span class="text-danger">*</span>
+                </label>
+                <select id="ssEmployee" class="form-select" asp-items="Model.EmployeeOptions">
+                    <option value="">— Select a team member —</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold d-block">Show</label>
+                <div class="btn-group" role="group" aria-label="Duration filter">
+                    <input type="radio" class="btn-check" name="ssFilter" id="ssFilterAll" value="all" checked>
+                    <label class="btn btn-outline-primary" for="ssFilterAll"><i class="bi bi-list-ul me-1"></i>All Shifts</label>
+                    <input type="radio" class="btn-check" name="ssFilter" id="ssFilterActive" value="active">
+                    <label class="btn btn-outline-primary" for="ssFilterActive"><i class="bi bi-lightning-charge me-1"></i>Active Shifts</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.EmployeeOptions.Any())
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-people fs-1 d-block mb-3 text-primary opacity-50"></i>
+            <h5 class="fw-semibold">No Team Members</h5>
+            <p class="mb-0 small">There are no active employees assigned to you as incharge.</p>
+        </div>
+    </div>
+}
+else
+{
+    <!-- ═══════════════════  EMPTY STATE  ═══════════════════ -->
+    <div id="ssEmpty" class="card shadow-sm @(Model.SelectedEmployeeId.HasValue ? "d-none" : "")">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-clock-history fs-1 d-block mb-3 text-primary opacity-50"></i>
+            <h5 class="fw-semibold">Select an Employee</h5>
+            <p class="mb-0 small">Choose a team member to view and manage their shift schedule.</p>
+        </div>
+    </div>
+
+    <!-- ═══════════════════  LOADING  ═══════════════════ -->
+    <div id="ssLoading" class="card shadow-sm d-none">
+        <div class="card-body text-center py-5 text-muted">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <div class="small">Loading schedule…</div>
+        </div>
+    </div>
+
+    <div id="ssContent" class="d-none">
+        <!-- ═══════════════════  EMPLOYEE HEADER  ═══════════════════ -->
+        <div class="card shadow-sm mb-4 border-0"
+             style="background: linear-gradient(135deg,#1e3a5f 0%,#2d6a9f 100%);">
+            <div class="card-body py-3 text-white">
+                <div class="row align-items-center g-3">
+                    <div class="col-auto">
+                        <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center"
+                             style="width:52px;height:52px;">
+                            <span class="fw-bold fs-5 text-white" id="ssInitials"></span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="fw-bold fs-5" id="ssName"></div>
+                        <div class="small opacity-75" id="ssMeta"></div>
+                    </div>
+                    <div class="col-auto text-end">
+                        <div class="small opacity-75">Current Shift</div>
+                        <span class="badge bg-white text-dark px-3 py-2 fs-6" id="ssCurrentShift">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════  DURATIONS  ═══════════════════ -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-semibold"><i class="bi bi-calendar-range me-2"></i>Shift Durations</h5>
+                    <small class="opacity-75" id="ssCount"></small>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="min-width:860px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:110px;">Duration</th>
+                                <th style="width:170px;">Effective From</th>
+                                <th style="width:130px;">Effective To</th>
+                                <th>Shift</th>
+                                <th class="text-center" style="width:80px;">Active</th>
+                                <th style="width:110px;">Status</th>
+                                <th class="text-end" style="width:60px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="ssRows"></tbody>
+                    </table>
+                </div>
+                <div id="ssNoRows" class="text-center text-muted py-4 small d-none">
+                    <i class="bi bi-info-circle me-1"></i>
+                    No shift durations scheduled. The employee follows their default shift
+                    <strong id="ssDefaultShift"></strong>. Click <strong>Add</strong> to schedule one.
+                </div>
+            </div>
+            <div class="card-footer bg-light py-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="small text-muted">
+                        <i class="bi bi-lock me-1"></i>Durations that have already started are locked.
+                        <span id="ssDirty" class="badge bg-warning text-dark ms-2 d-none">Unsaved changes</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" id="ssReset">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Discard
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="ssAdd">
+                            <i class="bi bi-plus-lg me-1"></i>Add
+                        </button>
+                        <button type="button" class="btn btn-success px-4" id="ssSave">
+                            <i class="bi bi-save me-1"></i>Update
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const SHIFTS   = @Html.Raw(shiftsJson);
+    const URL_GET  = '@Url.Action("GetShiftSchedule", "GenIncharge", new { area = "Administrator" })';
+    const URL_SAVE = '@Url.Action("SaveShiftSchedule", "GenIncharge", new { area = "Administrator" })';
+    const TOKEN    = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+    const $ = id => document.getElementById(id);
+    const empSelect = $('ssEmployee');
+    if (!empSelect || !$('ssContent')) return;
+
+    const today = isoDate(new Date());
+    let data = null, rows = [], original = '', tempId = 0;
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function isoDate(d) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function addDays(iso, n) {
+        const [y, m, d] = iso.split('-').map(Number);
+        return isoDate(new Date(y, m - 1, d + n));
+    }
+    function fmt(iso) { return iso ? iso.split('-').reverse().join('-') : ''; }
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function shiftName(id) { return SHIFTS.find(s => s.id === id)?.display ?? '—'; }
+    function snapshot() { return JSON.stringify(rows.map(r => [r.id, r.shiftId, r.effectiveFrom, r.isActive])); }
+    function isDirty() { return data && snapshot() !== original; }
+
+    function showAlert(type, msg) {
+        const icon = type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill';
+        $('ssAlert').innerHTML =
+            `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="bi bi-${icon} me-2"></i>${esc(msg)}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+             </div>`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setView(state) {
+        $('ssEmpty').classList.toggle('d-none', state !== 'empty');
+        $('ssLoading').classList.toggle('d-none', state !== 'loading');
+        $('ssContent').classList.toggle('d-none', state !== 'content');
+    }
+
+    // Derive "effective to" and status from active rows ordered by date
+    function computeTimeline() {
+        const active = rows.filter(r => r.isActive && r.effectiveFrom).sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom));
+        let currentKey = null;
+        active.forEach(r => { if (r.effectiveFrom <= today) currentKey = r.key; });
+        rows.forEach(r => {
+            const next = r.isActive ? active.find(a => a.effectiveFrom > r.effectiveFrom) : null;
+            r.effectiveTo = next ? addDays(next.effectiveFrom, -1) : null;
+            r.status = !r.isActive ? 'Inactive'
+                     : r.key === currentKey ? 'Current'
+                     : r.effectiveFrom > today ? 'Upcoming'
+                     : 'Past';
+        });
+        const cur = rows.find(r => r.key === currentKey);
+        $('ssCurrentShift').textContent = cur ? shiftName(cur.shiftId) : (data.defaultShiftName || 'Not Assigned');
+    }
+
+    // ── Rendering ────────────────────────────────────────────────────────────
+    const statusBadge = {
+        Current:  'bg-success',
+        Upcoming: 'bg-info text-dark',
+        Past:     'bg-secondary',
+        Inactive: 'bg-light text-muted border'
+    };
+
+    function shiftOptions(selectedId) {
+        return SHIFTS
+            .filter(s => s.isActive || s.id === selectedId)
+            .map(s => `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${esc(s.display)}${s.isActive ? '' : ' (inactive)'}</option>`)
+            .join('');
+    }
+
+    function render() {
+        computeTimeline();
+        const onlyActive = document.querySelector('input[name="ssFilter"]:checked').value === 'active';
+        const tbody = $('ssRows');
+        tbody.innerHTML = '';
+
+        rows.forEach((r, i) => {
+            const hidden = onlyActive && (r.status === 'Inactive' || r.status === 'Past');
+            const tr = document.createElement('tr');
+            tr.dataset.key = r.key;
+            if (hidden) tr.classList.add('d-none');
+            if (r.status === 'Current') tr.classList.add('table-success');
+            const dis = r.locked ? 'disabled' : '';
+
+            tr.innerHTML = `
+                <td class="fw-semibold text-nowrap">
+                    ${r.locked ? '<i class="bi bi-lock-fill text-muted me-1" title="Already started"></i>' : ''}Duration ${i + 1}
+                </td>
+                <td>
+                    <input type="date" class="form-control form-control-sm js-date" value="${r.effectiveFrom}"
+                           ${r.locked ? '' : `min="${today}"`} ${dis} required>
+                </td>
+                <td class="small text-nowrap">${r.effectiveTo ? fmt(r.effectiveTo) : (r.isActive ? '<span class="text-muted">Ongoing</span>' : '—')}</td>
+                <td>
+                    <select class="form-select form-select-sm js-shift" ${dis}>
+                        <option value="">— Select shift —</option>${shiftOptions(r.shiftId)}
+                    </select>
+                </td>
+                <td class="text-center">
+                    <div class="form-check form-switch d-inline-block mb-0">
+                        <input class="form-check-input js-active" type="checkbox" ${r.isActive ? 'checked' : ''} ${dis}>
+                    </div>
+                </td>
+                <td><span class="badge ${statusBadge[r.status]}">${r.status}</span></td>
+                <td class="text-end">
+                    ${r.locked ? '' : '<button type="button" class="btn btn-sm btn-outline-danger js-remove" title="Remove"><i class="bi bi-trash"></i></button>'}
+                </td>`;
+            tbody.appendChild(tr);
+        });
+
+        const visible = tbody.querySelectorAll('tr:not(.d-none)').length;
+        $('ssNoRows').classList.toggle('d-none', visible > 0);
+        $('ssDefaultShift').textContent = data.defaultShiftName ? `(${data.defaultShiftName})` : '';
+        $('ssCount').textContent = `${rows.length} duration(s)` + (onlyActive ? ` · ${visible} shown` : '');
+        $('ssDirty').classList.toggle('d-none', !isDirty());
+    }
+
+    function renderHeader() {
+        $('ssName').textContent = data.employeeName;
+        $('ssInitials').textContent = (data.employeeName || '').substring(0, 2).toUpperCase();
+        $('ssMeta').innerHTML =
+            `<i class="bi bi-person-badge me-1"></i>${esc(data.employeeNo)}` +
+            (data.department  ? `<span class="ms-2"><i class="bi bi-building me-1"></i>${esc(data.department)}</span>` : '') +
+            (data.designation ? `<span class="ms-2"><i class="bi bi-briefcase me-1"></i>${esc(data.designation)}</span>` : '');
+    }
+
+    function applySchedule(schedule) {
+        data = schedule;
+        rows = schedule.entries.map(e => ({
+            key: 'e' + e.id, id: e.id, shiftId: e.shiftId,
+            effectiveFrom: e.effectiveFrom, isActive: e.isActive,
+            locked: e.effectiveFrom < today
+        }));
+        original = snapshot();
+        renderHeader();
+        render();
+        setView('content');
+    }
+
+    // ── Data ─────────────────────────────────────────────────────────────────
+    async function load(employeeId) {
+        $('ssAlert').innerHTML = '';
+        if (!employeeId) { data = null; setView('empty'); return; }
+        setView('loading');
+        try {
+            const res = await fetch(`${URL_GET}?employeeId=${encodeURIComponent(employeeId)}`, { headers: { 'Accept': 'application/json' } });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.message || 'Unable to load shift schedule.');
+            applySchedule(body);
+            history.replaceState(null, '', `?employeeId=${employeeId}`);
+        } catch (err) {
+            data = null;
+            setView('empty');
+            showAlert('danger', err.message);
+        }
+    }
+
+    function validate() {
+        const seen = new Set();
+        for (let i = 0; i < rows.length; i++) {
+            const r = rows[i], n = `Duration ${i + 1}`;
+            if (!r.effectiveFrom) return `${n}: please select an effective date.`;
+            if (!r.shiftId) return `${n}: please select a shift.`;
+            if (!r.locked && r.effectiveFrom < today) return `${n}: ${fmt(r.effectiveFrom)} is a back date.`;
+            if (seen.has(r.effectiveFrom)) return `${n}: another duration already starts on ${fmt(r.effectiveFrom)}.`;
+            seen.add(r.effectiveFrom);
+        }
+        return null;
+    }
+
+    async function save() {
+        const error = validate();
+        if (error) { showAlert('warning', error); return; }
+
+        const btn = $('ssSave');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+        try {
+            const res = await fetch(URL_SAVE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': TOKEN },
+                body: JSON.stringify({
+                    employeeId: data.employeeId,
+                    entries: rows.map(r => ({ id: r.id, shiftId: r.shiftId, effectiveFrom: r.effectiveFrom, isActive: r.isActive }))
+                })
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body.message || 'Unable to save shift schedule.');
+            applySchedule(body.schedule);
+            showAlert('success', body.message);
+        } catch (err) {
+            showAlert('danger', err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-save me-1"></i>Update';
+        }
+    }
+
+    // ── Events ───────────────────────────────────────────────────────────────
+    let lastEmployee = empSelect.value;
+    empSelect.addEventListener('change', function () {
+        if (isDirty() && !confirm('You have unsaved changes. Discard them and switch employee?')) {
+            this.value = lastEmployee;
+            return;
+        }
+        lastEmployee = this.value;
+        load(this.value);
+    });
+
+    document.querySelectorAll('input[name="ssFilter"]').forEach(r => r.addEventListener('change', () => data && render()));
+
+    $('ssRows').addEventListener('change', function (e) {
+        const row = rows.find(r => r.key === e.target.closest('tr')?.dataset.key);
+        if (!row || row.locked) return;
+        if (e.target.classList.contains('js-date'))   row.effectiveFrom = e.target.value;
+        if (e.target.classList.contains('js-shift'))  row.shiftId = e.target.value ? Number(e.target.value) : null;
+        if (e.target.classList.contains('js-active')) row.isActive = e.target.checked;
+        render();
+    });
+
+    $('ssRows').addEventListener('click', function (e) {
+        const btn = e.target.closest('.js-remove');
+        if (!btn) return;
+        const key = btn.closest('tr').dataset.key;
+        rows = rows.filter(r => r.key !== key || r.locked);
+        render();
+    });
+
+    $('ssAdd').addEventListener('click', function () {
+        const latest = rows.map(r => r.effectiveFrom).filter(Boolean).sort().pop();
+        const start = latest && latest >= today ? addDays(latest, 1) : today;
+        const lastShift = [...rows].reverse().find(r => r.shiftId)?.shiftId;
+        rows.push({
+            key: 'n' + (++tempId), id: null,
+            shiftId: lastShift ?? data.currentShiftId ?? SHIFTS.find(s => s.isActive)?.id ?? null,
+            effectiveFrom: start, isActive: true, locked: false
+        });
+        render();
+        $('ssRows').lastElementChild?.querySelector('.js-date')?.focus();
+    });
+
+    $('ssReset').addEventListener('click', function () {
+        if (!isDirty() || confirm('Discard all unsaved changes?')) load(data.employeeId);
+    });
+
+    $('ssSave').addEventListener('click', save);
+
+    window.addEventListener('beforeunload', function (e) {
+        if (isDirty()) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    if (empSelect.value) load(empSelect.value);
+});
+</script>
+}

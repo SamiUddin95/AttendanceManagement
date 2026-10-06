@@ -21,6 +21,7 @@ public class UpdateCalendarViewModel
     public string? EmployeeNo     { get; set; }
     public string? Department     { get; set; }
     public string? Designation    { get; set; }
+    public string? ShiftName      { get; set; }
 
     // ── Calendar grid data ────────────────────────────────────────────────────
 
@@ -33,6 +34,8 @@ public class UpdateCalendarViewModel
 
     public bool HasCalendar => SelectedEmployeeId.HasValue && CalendarDays.Any();
 
+    public int OverriddenCount => CalendarDays.Count(d => d.IsOverridden);
+
     public static readonly List<string> DayStatusOptions = new()
     {
         "Working", "Off", "Sunday", "Gazetted", "Provincial", "Strike"
@@ -41,11 +44,18 @@ public class UpdateCalendarViewModel
 
 public class CalendarDayEntry
 {
-    public DateTime Date      { get; set; }
-    public string DayStatus   { get; set; } = "Working";
-    public bool IsSunday      => Date.DayOfWeek == DayOfWeek.Sunday;
-    public string DayLabel    => Date.ToString("ddd");
-    public string DateKey     => Date.ToString("yyyy-MM-dd");
+    public DateTime Date          { get; set; }
+    public string DayStatus       { get; set; } = "Working";
+    public string DefaultStatus   { get; set; } = "Working";
+    public string? DefaultSource  { get; set; }   // e.g. "General Shift" or "Gazetted Holiday"
+    public bool IsSunday          => Date.DayOfWeek == DayOfWeek.Sunday;
+    public bool IsOverridden      => !string.Equals(DayStatus, DefaultStatus, StringComparison.OrdinalIgnoreCase);
+    public string DayLabel        => Date.ToString("ddd");
+    public string DateKey         => Date.ToString("yyyy-MM-dd");
+
+    // "Sunday" is only offered where it is meaningful (actual Sundays or shift weekly-off days)
+    public IEnumerable<string> StatusOptions =>
+        UpdateCalendarViewModel.DayStatusOptions.Where(o => o != "Sunday" || IsSunday || DefaultStatus == "Sunday" || DayStatus == "Sunday");
 }
 
 public class CalendarMonthItem

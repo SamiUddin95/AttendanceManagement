@@ -659,9 +659,9 @@ public class GenInchargeController : Controller
             return View(await BuildEmptyUpdateCalendarAsync(null));
         }
 
-        var vm = await BuildEmptyUpdateCalendarAsync(incharge);
-        vm.SelectedMonth = month ?? DateTime.Now.Month;
-        vm.SelectedYear  = year  ?? DateTime.Now.Year;
+        var vm = await BuildEmptyUpdateCalendarAsync(incharge, employeeId);
+        vm.SelectedMonth = month is >= 1 and <= 12 ? month.Value : DateTime.Now.Month;
+        vm.SelectedYear  = year.HasValue && vm.AvailableYears.Contains(year.Value) ? year.Value : DateTime.Now.Year;
 
         if (!employeeId.HasValue)
             return View(vm);
@@ -669,6 +669,7 @@ public class GenInchargeController : Controller
         var member = await _context.Employees
             .Include(e => e.Department)
             .Include(e => e.Designation)
+            .Include(e => e.Shift)
             .FirstOrDefaultAsync(e => e.Id == employeeId.Value
                                    && e.InchargeEmployeeId == incharge.Id);
 
@@ -683,11 +684,14 @@ public class GenInchargeController : Controller
         vm.EmployeeNo     = member.EmployeeNo;
         vm.Department     = member.Department?.Name;
         vm.Designation    = member.Designation?.Name;
+        vm.ShiftName      = member.Shift?.Name;
 
         var startDate = new DateTime(vm.SelectedYear, vm.SelectedMonth, 1);
         var endDate   = startDate.AddMonths(1).AddDays(-1);
 
-        // Load saved statuses from DB for this employee+month
+        var defaults = await BuildDefaultDayStatusesAsync(member, startDate, endDate);
+
+        // Saved statuses are incharge overrides on top of the computed defaults
         var savedDays = await _context.EmployeeCalendarDays
             .Where(d => d.EmployeeId == member.Id
                      && d.Date >= startDate && d.Date <= endDate)
@@ -695,15 +699,87 @@ public class GenInchargeController : Controller
 
         for (var date = startDate; date <= endDate; date = date.AddDays(1))
         {
-            string defaultStatus = date.DayOfWeek == DayOfWeek.Sunday ? "Sunday" : "Working";
+            var (defaultStatus, source) = defaults[date];
             vm.CalendarDays.Add(new CalendarDayEntry
             {
-                Date      = date,
-                DayStatus = savedDays.TryGetValue(date.Date, out var saved) ? saved : defaultStatus
+                Date          = date,
+                DefaultStatus = defaultStatus,
+                DefaultSource = source,
+                DayStatus     = savedDays.TryGetValue(date.Date, out var saved) ? saved : defaultStatus
             });
         }
 
         return View(vm);
+    }
+
+    // Resolves each day's default status from the employee's scheduled shift (weekly pattern)
+    // and the Mark Days configured for the employee's groups (holidays, strikes, etc.)
+    private async Task<Dictionary<DateTime, (string Status, string? Source)>> BuildDefaultDayStatusesAsync(
+        Employee member, DateTime startDate, DateTime endDate)
+    {
+        var schedules = await _context.EmployeeShiftSchedules
+            .Where(s => s.EmployeeId == member.Id && s.IsActive && s.EffectiveFrom <= endDate)
+            .OrderBy(s => s.EffectiveFrom)
+            .Select(s => new { s.ShiftId, s.EffectiveFrom })
+            .ToListAsync();
+
+        var shiftIds = schedules.Select(s => s.ShiftId).ToList();
+        if (member.ShiftId.HasValue) shiftIds.Add(member.ShiftId.Value);
+
+        var shifts = await _context.Shifts
+            .Include(s => s.ShiftDays)
+            .Where(s => shiftIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id);
+
+        var groupIds = await _context.GroupEmployees
+            .Where(g => g.EmployeeId == member.Id && g.IsActive)
+            .Select(g => g.GroupId)
+            .ToListAsync();
+
+        var markDays = await _context.MarkDays
+            .Where(md => md.CompanyId == member.CompanyId && groupIds.Contains(md.GroupId)
+                      && md.FromDate <= endDate && md.ToDate >= startDate)
+            .OrderBy(md => md.CreatedAtUtc)
+            .ToListAsync();
+
+        var result = new Dictionary<DateTime, (string, string?)>();
+        for (var date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
+        {
+            var shiftId = schedules.LastOrDefault(s => s.EffectiveFrom <= date)?.ShiftId ?? member.ShiftId;
+            var shift   = shiftId.HasValue ? shifts.GetValueOrDefault(shiftId.Value) : null;
+            var day     = shift?.ShiftDays.FirstOrDefault(d => d.DayOfWeek == date.DayOfWeek);
+            var weekdayDefault = date.DayOfWeek == DayOfWeek.Sunday ? "Sunday" : "Working";
+
+            var status = day switch
+            {
+                null                                                            => weekdayDefault,
+                { IsSunday: true }                                              => "Sunday",
+                { IsHoliday: true }                                             => "Off",
+                _ when day.IsWorking || day.IsAlternate || day.IsOther || day.IsFlexible => "Working",
+                _                                                               => weekdayDefault
+            };
+            string? source = shift?.Name;
+
+            // Most recently created mark day wins when ranges overlap
+            var mark = markDays.LastOrDefault(m => m.FromDate.Date <= date && m.ToDate.Date >= date);
+            if (mark != null)
+            {
+                (status, source) = mark switch
+                {
+                    { IsEid: true }               => ("Gazetted",   "Eid Holiday"),
+                    { IsGazettedHoliday: true }   => ("Gazetted",   "Gazetted Holiday"),
+                    { IsProvincialHoliday: true } => ("Provincial", "Provincial Holiday"),
+                    { IsStrike: true }            => ("Strike",     "Strike Day"),
+                    { IsOff: true }               => ("Off",        "Marked Off Day"),
+                    { IsOn: true }                => ("Working",    "Marked Working Day"),
+                    _                             => (status, source)
+                };
+            }
+
+            result[date] = (status, source);
+        }
+
+        return result;
     }
 
     [HttpPost]
@@ -719,7 +795,8 @@ public class GenInchargeController : Controller
 
         if (!int.TryParse(form["employeeId"], out int employeeId) ||
             !int.TryParse(form["month"],      out int month)      ||
-            !int.TryParse(form["year"],       out int year))
+            !int.TryParse(form["year"],       out int year)       ||
+            month is < 1 or > 12 || year is < 2000 or > 2100)
         {
             TempData["ErrorMessage"] = "Invalid form data.";
             return RedirectToAction(nameof(UpdateCalendar));
@@ -738,6 +815,8 @@ public class GenInchargeController : Controller
         var startDate = new DateTime(year, month, 1);
         var endDate   = startDate.AddMonths(1).AddDays(-1);
 
+        var defaults = await BuildDefaultDayStatusesAsync(member, startDate, endDate);
+
         // Load existing records for upsert
         var existingRows = await _context.EmployeeCalendarDays
             .Where(d => d.EmployeeId == employeeId
@@ -745,14 +824,31 @@ public class GenInchargeController : Controller
             .ToDictionaryAsync(d => d.Date.Date);
 
         var now = DateTime.UtcNow;
+        var changed = 0;
         for (var date = startDate; date <= endDate; date = date.AddDays(1))
         {
             var key    = $"status_{date:yyyy-MM-dd}";
             var status = form[key].ToString();
             if (string.IsNullOrWhiteSpace(status)) continue;
 
-            if (existingRows.TryGetValue(date.Date, out var row))
+            if (!UpdateCalendarViewModel.DayStatusOptions.Contains(status))
             {
+                TempData["ErrorMessage"] = $"Invalid status '{status}' for {date:dd-MM-yyyy}.";
+                return RedirectToAction(nameof(UpdateCalendar), new { employeeId, month, year });
+            }
+
+            var hasRow = existingRows.TryGetValue(date.Date, out var row);
+
+            // Only deviations from the computed default are stored; matching the default clears the override
+            if (status == defaults[date].Status)
+            {
+                if (hasRow) { _context.EmployeeCalendarDays.Remove(row!); changed++; }
+                continue;
+            }
+
+            if (hasRow)
+            {
+                if (row!.DayStatus == status) continue;
                 row.DayStatus            = status;
                 row.UpdatedByEmployeeId  = incharge.Id;
                 row.UpdatedAtUtc         = now;
@@ -769,15 +865,18 @@ public class GenInchargeController : Controller
                     UpdatedAtUtc        = now
                 });
             }
+            changed++;
         }
 
         await _context.SaveChangesAsync();
-        TempData["SuccessMessage"] = $"Calendar updated for {member.Name} — {new DateTime(year, month, 1):MMMM yyyy}.";
+        TempData["SuccessMessage"] = changed == 0
+            ? $"No changes to save for {member.Name} — {startDate:MMMM yyyy}."
+            : $"Calendar updated for {member.Name} — {startDate:MMMM yyyy} ({changed} day(s) changed).";
         return RedirectToAction(nameof(UpdateCalendar),
             new { employeeId, month, year });
     }
 
-    private async Task<UpdateCalendarViewModel> BuildEmptyUpdateCalendarAsync(Employee? incharge)
+    private async Task<UpdateCalendarViewModel> BuildEmptyUpdateCalendarAsync(Employee? incharge, int? selectedEmployeeId = null)
     {
         var teamItems = new List<SelectListItem>();
         if (incharge != null)
@@ -800,7 +899,7 @@ public class GenInchargeController : Controller
             SelectedYear    = currentYear,
             AvailableYears  = Enumerable.Range(currentYear - 3, 5).ToList(),
             AvailableMonths = BuildCalendarMonthList(),
-            EmployeeOptions = new SelectList(teamItems, "Value", "Text")
+            EmployeeOptions = new SelectList(teamItems, "Value", "Text", selectedEmployeeId?.ToString())
         };
     }
 
@@ -813,6 +912,247 @@ public class GenInchargeController : Controller
         new() { Value = 9,  Name = "September"  }, new() { Value = 10, Name = "October"   },
         new() { Value = 11, Name = "November"   }, new() { Value = 12, Name = "December"  }
     };
+
+    // ── Shift Scheduling ─────────────────────────────────────────────────────
+
+    public async Task<IActionResult> ShiftScheduling(int? employeeId)
+    {
+        ViewData["Title"] = "Shift Scheduling";
+        var incharge = await GetLoggedInEmployeeAsync(User.Identity?.Name);
+        if (incharge == null)
+        {
+            TempData["ErrorMessage"] = "Employee record not found for current user.";
+            return View(new ShiftSchedulingViewModel());
+        }
+
+        var members = await _context.Employees
+            .Where(e => e.InchargeEmployeeId == incharge.Id && e.IsActive)
+            .OrderBy(e => e.Name)
+            .Select(e => new { e.Id, e.Name, e.EmployeeNo })
+            .ToListAsync();
+
+        var selectedId = members.Any(m => m.Id == employeeId) ? employeeId : members.FirstOrDefault()?.Id;
+
+        return View(new ShiftSchedulingViewModel
+        {
+            SelectedEmployeeId = selectedId,
+            EmployeeOptions = new SelectList(
+                members.Select(m => new SelectListItem($"{m.Name} ({m.EmployeeNo})", m.Id.ToString())),
+                "Value", "Text", selectedId?.ToString()),
+            Shifts = await GetShiftOptionsAsync(incharge.CompanyId)
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetShiftSchedule(int employeeId)
+    {
+        var incharge = await GetLoggedInEmployeeAsync(User.Identity?.Name);
+        if (incharge == null) return Forbid();
+
+        var member = await _context.Employees
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
+            .Include(e => e.Shift)
+            .FirstOrDefaultAsync(e => e.Id == employeeId && e.InchargeEmployeeId == incharge.Id);
+
+        if (member == null)
+            return NotFound(new { message = "Selected employee is not in your team." });
+
+        return Json(await BuildShiftScheduleResponseAsync(member));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveShiftSchedule([FromBody] SaveShiftScheduleRequest request)
+    {
+        var incharge = await GetLoggedInEmployeeAsync(User.Identity?.Name);
+        if (incharge == null) return Forbid();
+
+        var member = await _context.Employees
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
+            .Include(e => e.Shift)
+            .FirstOrDefaultAsync(e => e.Id == request.EmployeeId && e.InchargeEmployeeId == incharge.Id);
+
+        if (member == null)
+            return BadRequest(new { message = "Selected employee is not in your team." });
+
+        var entries = request.Entries ?? new List<ShiftScheduleEntryDto>();
+        var today = DateTime.Today;
+
+        // ── Validation ──
+        var duplicateDate = entries.GroupBy(e => e.EffectiveFrom.Date).FirstOrDefault(g => g.Count() > 1);
+        if (duplicateDate != null)
+            return BadRequest(new { message = $"More than one duration starts on {duplicateDate.Key:dd-MM-yyyy}. Each duration must start on a different date." });
+
+        var validShiftIds = await _context.Shifts
+            .Where(s => s.CompanyId == member.CompanyId)
+            .Select(s => s.Id)
+            .ToListAsync();
+        if (entries.Any(e => !validShiftIds.Contains(e.ShiftId)))
+            return BadRequest(new { message = "Please select a valid shift for every duration." });
+
+        var existing = await _context.EmployeeShiftSchedules
+            .Where(s => s.EmployeeId == member.Id)
+            .ToListAsync();
+
+        if (entries.Any(e => e.Id.HasValue && existing.All(x => x.Id != e.Id)))
+            return BadRequest(new { message = "One or more durations no longer exist. Please reload and try again." });
+
+        // Past durations are locked to preserve attendance history
+        foreach (var row in existing.Where(x => x.EffectiveFrom.Date < today))
+        {
+            var submitted = entries.FirstOrDefault(e => e.Id == row.Id);
+            if (submitted == null)
+                return BadRequest(new { message = $"The duration starting {row.EffectiveFrom:dd-MM-yyyy} has already started and cannot be removed." });
+            if (submitted.EffectiveFrom.Date != row.EffectiveFrom.Date || submitted.ShiftId != row.ShiftId || submitted.IsActive != row.IsActive)
+                return BadRequest(new { message = $"The duration starting {row.EffectiveFrom:dd-MM-yyyy} has already started and cannot be changed. Add a new duration instead." });
+        }
+
+        var invalidBackDate = entries.FirstOrDefault(e => e.EffectiveFrom.Date < today &&
+            (!e.Id.HasValue || existing.First(x => x.Id == e.Id).EffectiveFrom.Date != e.EffectiveFrom.Date));
+        if (invalidBackDate != null)
+            return BadRequest(new { message = $"{invalidBackDate.EffectiveFrom:dd-MM-yyyy} is a back date. New durations must start today or later." });
+
+        // ── Persist ──
+        var now = DateTime.UtcNow;
+        var keepIds = entries.Where(e => e.Id.HasValue).Select(e => e.Id!.Value).ToHashSet();
+        _context.EmployeeShiftSchedules.RemoveRange(existing.Where(x => !keepIds.Contains(x.Id)));
+
+        foreach (var entry in entries)
+        {
+            if (entry.Id.HasValue)
+            {
+                var row = existing.First(x => x.Id == entry.Id.Value);
+                if (row.ShiftId == entry.ShiftId && row.EffectiveFrom.Date == entry.EffectiveFrom.Date && row.IsActive == entry.IsActive)
+                    continue;
+
+                row.ShiftId = entry.ShiftId;
+                row.EffectiveFrom = entry.EffectiveFrom.Date;
+                row.IsActive = entry.IsActive;
+                row.UpdatedByEmployeeId = incharge.Id;
+                row.UpdatedAtUtc = now;
+            }
+            else
+            {
+                _context.EmployeeShiftSchedules.Add(new EmployeeShiftSchedule
+                {
+                    CompanyId = member.CompanyId,
+                    EmployeeId = member.Id,
+                    ShiftId = entry.ShiftId,
+                    EffectiveFrom = entry.EffectiveFrom.Date,
+                    IsActive = entry.IsActive,
+                    CreatedByEmployeeId = incharge.Id,
+                    CreatedAtUtc = now
+                });
+            }
+        }
+
+        // Keep the employee's current shift in sync with today's effective schedule
+        var current = entries
+            .Where(e => e.IsActive && e.EffectiveFrom.Date <= today)
+            .OrderByDescending(e => e.EffectiveFrom)
+            .FirstOrDefault();
+        if (current != null && (member.ShiftId != current.ShiftId || member.AssignedShiftDate?.Date != current.EffectiveFrom.Date))
+        {
+            member.ShiftId = current.ShiftId;
+            member.AssignedShiftDate = current.EffectiveFrom.Date;
+        }
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return BadRequest(new { message = "Unable to save the schedule. Please make sure each duration starts on a unique date and try again." });
+        }
+
+        _context.ChangeTracker.Clear();
+        var reloaded = await _context.Employees
+            .Include(e => e.Department)
+            .Include(e => e.Designation)
+            .Include(e => e.Shift)
+            .FirstAsync(e => e.Id == member.Id);
+
+        return Json(new
+        {
+            message = $"Shift schedule updated for {member.Name}.",
+            schedule = await BuildShiftScheduleResponseAsync(reloaded)
+        });
+    }
+
+    private async Task<EmployeeShiftScheduleResponse> BuildShiftScheduleResponseAsync(Employee member)
+    {
+        var today = DateTime.Today;
+        var rows = await _context.EmployeeShiftSchedules
+            .Include(s => s.Shift)
+            .Include(s => s.UpdatedByEmployee)
+            .Include(s => s.CreatedByEmployee)
+            .Where(s => s.EmployeeId == member.Id)
+            .OrderBy(s => s.EffectiveFrom)
+            .ToListAsync();
+
+        var activeRows = rows.Where(r => r.IsActive).ToList();
+        var currentId = activeRows.LastOrDefault(r => r.EffectiveFrom.Date <= today)?.Id;
+
+        return new EmployeeShiftScheduleResponse
+        {
+            EmployeeId = member.Id,
+            EmployeeName = member.Name,
+            EmployeeNo = member.EmployeeNo,
+            Department = member.Department?.Name,
+            Designation = member.Designation?.Name,
+            DefaultShiftId = member.ShiftId,
+            DefaultShiftName = member.Shift?.Name,
+            CurrentShiftId = rows.FirstOrDefault(r => r.Id == currentId)?.ShiftId ?? member.ShiftId,
+            Entries = rows.Select(r =>
+            {
+                var next = activeRows.FirstOrDefault(a => a.EffectiveFrom > r.EffectiveFrom);
+                return new ShiftScheduleRow
+                {
+                    Id = r.Id,
+                    ShiftId = r.ShiftId,
+                    ShiftName = r.Shift?.Name ?? string.Empty,
+                    EffectiveFrom = r.EffectiveFrom.ToString("yyyy-MM-dd"),
+                    EffectiveTo = r.IsActive ? next?.EffectiveFrom.AddDays(-1).ToString("yyyy-MM-dd") : null,
+                    IsActive = r.IsActive,
+                    IsCurrent = r.Id == currentId,
+                    UpdatedBy = (r.UpdatedByEmployee ?? r.CreatedByEmployee)?.Name,
+                    UpdatedAtUtc = r.UpdatedAtUtc ?? r.CreatedAtUtc
+                };
+            }).ToList()
+        };
+    }
+
+    private async Task<List<ShiftOptionItem>> GetShiftOptionsAsync(Guid companyId)
+    {
+        var shifts = await _context.Shifts
+            .Include(s => s.ShiftDays)
+            .Where(s => s.CompanyId == companyId)
+            .OrderByDescending(s => s.IsActive)
+            .ThenBy(s => s.Name)
+            .ToListAsync();
+
+        return shifts.Select(s =>
+        {
+            // Prefer a regular working weekday for the representative timing
+            var day = s.ShiftDays
+                .Where(d => d.StartTime.HasValue && d.Duration.HasValue && (d.IsWorking || d.IsFlexible))
+                .OrderBy(d => d.DayOfWeek == DayOfWeek.Monday ? 0 : 1)
+                .ThenBy(d => d.DayOfWeek)
+                .FirstOrDefault();
+
+            string? timing = null;
+            if (day != null)
+            {
+                var end = day.StartTime!.Value.Add(day.Duration!.Value);
+                timing = $"{day.StartTime.Value:hh\\:mm} To {TimeSpan.FromMinutes(end.TotalMinutes % 1440):hh\\:mm}";
+            }
+
+            return new ShiftOptionItem { Id = s.Id, Name = s.Name, Timing = timing, IsActive = s.IsActive };
+        }).ToList();
+    }
 
     // ── Private Helpers ──────────────────────────────────────────────────────
 

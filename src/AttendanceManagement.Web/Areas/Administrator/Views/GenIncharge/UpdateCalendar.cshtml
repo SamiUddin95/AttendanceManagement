@@ -27,43 +27,26 @@
     </div>
 }
 
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small mb-0">
+        <li class="breadcrumb-item"><a asp-area="Administrator" asp-controller="Dashboard" asp-action="Index">Home</a></li>
+        <li class="breadcrumb-item">Incharge</li>
+        <li class="breadcrumb-item active" aria-current="page">Update Calendar</li>
+    </ol>
+</nav>
+
 <!-- ═══════════════════  FILTER FORM  ═══════════════════ -->
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-light py-3">
         <h5 class="mb-0 fw-semibold">
-            <i class="bi bi-calendar3 me-2 text-primary"></i>Update Employee Calendar
+            <i class="bi bi-calendar3 me-2 text-primary"></i>Employee Calendar
         </h5>
     </div>
     <div class="card-body">
-        <form method="get" asp-action="UpdateCalendar" class="row g-3 align-items-end">
-            <div class="col-md-5">
-                <label class="form-label fw-semibold">
-                    Employee <span class="text-danger">*</span>
-                </label>
-                <select name="employeeId" class="form-select" required
-                        asp-items="Model.EmployeeOptions">
-                    <option value="">— Select a team member —</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-semibold">Month</label>
-                <select name="month" class="form-select">
-                    @foreach (var m in Model.AvailableMonths)
-                    {
-                        if (Model.SelectedMonth == m.Value)
-                        {
-                            <option value="@m.Value" selected>@m.Name</option>
-                        }
-                        else
-                        {
-                            <option value="@m.Value">@m.Name</option>
-                        }
-                    }
-                </select>
-            </div>
+        <form method="get" asp-action="UpdateCalendar" id="calendarFilter" class="row g-3 align-items-end">
             <div class="col-md-2">
-                <label class="form-label fw-semibold">Year</label>
-                <select name="year" class="form-select">
+                <label for="fYear" class="form-label fw-semibold">Year</label>
+                <select name="year" id="fYear" class="form-select js-autoload">
                     @foreach (var y in Model.AvailableYears)
                     {
                         if (Model.SelectedYear == y)
@@ -77,10 +60,39 @@
                     }
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-calendar-check me-1"></i>Load Calendar
-                </button>
+            <div class="col-md-3">
+                <label for="fMonth" class="form-label fw-semibold">Month</label>
+                <select name="month" id="fMonth" class="form-select js-autoload">
+                    @foreach (var m in Model.AvailableMonths)
+                    {
+                        if (Model.SelectedMonth == m.Value)
+                        {
+                            <option value="@m.Value" selected>@m.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@m.Value">@m.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="fEmployee" class="form-label fw-semibold">
+                    Employee <span class="text-danger">*</span>
+                </label>
+                <select name="employeeId" id="fEmployee" class="form-select js-autoload" required
+                        asp-items="Model.EmployeeOptions">
+                    <option value="">— Select a team member —</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="chkSelectWorking"
+                           @(Model.HasCalendar ? "" : "disabled")>
+                    <label class="form-check-label fw-semibold" for="chkSelectWorking"
+                           title="Mark every non-weekly-off day as Working">Select Working</label>
+                </div>
+                <noscript><button type="submit" class="btn btn-primary btn-sm">Load</button></noscript>
             </div>
         </form>
     </div>
@@ -91,9 +103,8 @@
     <div class="card shadow-sm">
         <div class="card-body text-center py-5 text-muted">
             <i class="bi bi-calendar3 fs-1 d-block mb-3 text-primary opacity-50"></i>
-            <h5 class="fw-semibold">Select an Employee &amp; Period</h5>
-            <p class="mb-0 small">Choose a team member, month, and year then click
-                <strong>Load Calendar</strong> to begin editing.</p>
+            <h5 class="fw-semibold">Select an Employee</h5>
+            <p class="mb-0 small">Choose a year, month and team member — the calendar loads automatically.</p>
         </div>
     </div>
 }
@@ -103,7 +114,7 @@ else
     <div class="card shadow-sm mb-4 border-0"
          style="background: linear-gradient(135deg,#1e3a5f 0%,#2d6a9f 100%);">
         <div class="card-body py-3 text-white">
-            <div class="row align-items-center">
+            <div class="row align-items-center g-3">
                 <div class="col-auto">
                     <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center
                                 justify-content-center" style="width:52px;height:52px;">
@@ -123,6 +134,10 @@ else
                         @if (!string.IsNullOrWhiteSpace(Model.Designation))
                         {
                             <span class="ms-2"><i class="bi bi-briefcase me-1"></i>@Model.Designation</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.ShiftName))
+                        {
+                            <span class="ms-2"><i class="bi bi-clock me-1"></i>@Model.ShiftName</span>
                         }
                     </div>
                 </div>
@@ -146,14 +161,13 @@ else
                 {
                     <span class="badge @bg @fg px-3 py-2">@status</span>
                 }
-                <div class="ms-auto d-flex gap-2">
+                <span class="small text-muted">
+                    <i class="bi bi-pencil-fill text-warning me-1"></i>Changed from default
+                </span>
+                <div class="ms-auto">
                     <button type="button" class="btn btn-sm btn-outline-secondary"
-                            id="btnResetDefaults" title="Reset Sundays to Sunday, all others to Working">
+                            id="btnResetDefaults" title="Restore defaults from the employee's shift and mark days">
                         <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Defaults
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-success"
-                            id="btnSetAllWorking" title="Set all days to Working">
-                        <i class="bi bi-check-all me-1"></i>Set All Working
                     </button>
                 </div>
             </div>
@@ -161,7 +175,7 @@ else
     </div>
 
     <!-- ═══════════════════  CALENDAR SAVE FORM  ═══════════════════ -->
-    <form asp-action="SaveCalendar" method="post">
+    <form asp-action="SaveCalendar" method="post" id="calendarForm">
         @Html.AntiForgeryToken()
         <input type="hidden" name="employeeId" value="@Model.SelectedEmployeeId" />
         <input type="hidden" name="month"      value="@Model.SelectedMonth" />
@@ -173,20 +187,21 @@ else
                     <h5 class="mb-0 fw-semibold">
                         <i class="bi bi-pencil-square me-2"></i>@Model.MonthYearDisplay — Daily Status
                     </h5>
-                    <small class="opacity-75">@Model.CalendarDays.Count days total</small>
+                    <small class="opacity-75">
+                        @Model.CalendarDays.Count days · <span id="overrideCount">@Model.OverriddenCount</span> changed from default
+                    </small>
                 </div>
             </div>
 
-            <!-- ── WEEK-HEADER GRID ── -->
             <div class="card-body p-3">
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm align-middle mb-0"
-                           style="min-width:900px;">
+                           style="min-width:900px; table-layout:fixed;">
                         <thead class="table-dark">
                             <tr>
                                 @foreach (var dow in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
                                 {
-                                    <th class="text-center py-2" style="width:14.28%;">@dow</th>
+                                    <th class="text-center py-2">@dow</th>
                                 }
                             </tr>
                         </thead>
@@ -195,9 +210,9 @@ else
                                 var firstDay     = new DateTime(Model.SelectedYear, Model.SelectedMonth, 1);
                                 var startOffset  = (int)firstDay.DayOfWeek; // 0=Sun … 6=Sat
                                 var allDays      = Model.CalendarDays;
-                                int totalCells   = startOffset + allDays.Count;
-                                int totalRows    = (int)Math.Ceiling(totalCells / 7.0);
+                                int totalRows    = (int)Math.Ceiling((startOffset + allDays.Count) / 7.0);
                                 int dayIndex     = 0;
+                                var todayDate    = DateTime.Today;
                             }
                             @for (int row = 0; row < totalRows; row++)
                             {
@@ -205,47 +220,55 @@ else
                                     @for (int col = 0; col < 7; col++)
                                     {
                                         int cellIndex = row * 7 + col;
-                                        bool isEmpty  = cellIndex < startOffset || dayIndex >= allDays.Count;
-                                        if (isEmpty)
+                                        if (cellIndex < startOffset || dayIndex >= allDays.Count)
                                         {
-                                            <td class="bg-light" style="height:90px;"></td>
+                                            <td class="bg-light" style="height:96px;"></td>
+                                            continue;
                                         }
-                                        else
-                                        {
-                                            var entry    = allDays[dayIndex++];
-                                            var isSun    = entry.IsSunday;
-                                            var (sbg, sfg) = statusColors.TryGetValue(entry.DayStatus, out var sc)
-                                                ? sc : ("bg-secondary", "text-white");
-                                            <td class="p-2 @(isSun ? "bg-primary bg-opacity-10" : "")"
-                                                style="height:90px; vertical-align:top;">
-                                                <!-- Date number + day name -->
-                                                <div class="d-flex justify-content-between align-items-start mb-1">
-                                                    <span class="fw-bold @(isSun ? "text-primary" : "text-dark")">
-                                                        @entry.Date.Day
-                                                    </span>
-                                                    <span class="badge @sbg @sfg" style="font-size:0.62rem;">
-                                                        @entry.DayStatus
-                                                    </span>
-                                                </div>
-                                                <!-- Status dropdown -->
-                                                <select name="status_@entry.DateKey"
-                                                        class="form-select form-select-sm status-select mt-1"
-                                                        data-is-sunday="@(isSun ? "true" : "false")"
-                                                        style="font-size:0.75rem;">
-                                                    @foreach (var opt in AttendanceManagement.Web.ViewModels.GenIncharge.UpdateCalendarViewModel.DayStatusOptions)
+
+                                        var entry = allDays[dayIndex++];
+                                        var isSun = entry.IsSunday;
+                                        var (sbg, sfg) = statusColors.TryGetValue(entry.DayStatus, out var sc)
+                                            ? sc : ("bg-secondary", "text-white");
+                                        var defaultTip = $"Default: {entry.DefaultStatus}" +
+                                                         (string.IsNullOrWhiteSpace(entry.DefaultSource) ? "" : $" ({entry.DefaultSource})");
+                                        <td class="p-2 day-cell @(isSun ? "bg-primary bg-opacity-10" : "") @(entry.Date == todayDate ? "border border-2 border-primary" : "")"
+                                            style="height:96px; vertical-align:top;" title="@defaultTip">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <span class="fw-bold @(isSun ? "text-primary" : "text-dark")">
+                                                    @entry.Date.Day.ToString("D2")
+                                                    <i class="bi bi-pencil-fill text-warning ms-1 override-mark @(entry.IsOverridden ? "" : "d-none")"
+                                                       style="font-size:.65rem;"></i>
+                                                </span>
+                                                <span class="badge status-badge @sbg @sfg" style="font-size:0.62rem;">
+                                                    @entry.DayStatus
+                                                </span>
+                                            </div>
+                                            <select name="status_@entry.DateKey"
+                                                    class="form-select form-select-sm status-select mt-1"
+                                                    data-default="@entry.DefaultStatus"
+                                                    data-initial="@entry.DayStatus"
+                                                    aria-label="Status for @entry.Date.ToString("dd MMM yyyy")"
+                                                    style="font-size:0.75rem;">
+                                                @foreach (var opt in entry.StatusOptions)
+                                                {
+                                                    if (entry.DayStatus == opt)
                                                     {
-                                                        if (entry.DayStatus == opt)
-                                                        {
-                                                            <option value="@opt" selected>@opt</option>
-                                                        }
-                                                        else
-                                                        {
-                                                            <option value="@opt">@opt</option>
-                                                        }
+                                                        <option value="@opt" selected>@opt</option>
                                                     }
-                                                </select>
-                                            </td>
-                                        }
+                                                    else
+                                                    {
+                                                        <option value="@opt">@opt</option>
+                                                    }
+                                                }
+                                            </select>
+                                            @if (!string.IsNullOrWhiteSpace(entry.DefaultSource) && entry.DefaultStatus is not ("Working" or "Sunday"))
+                                            {
+                                                <div class="text-muted text-truncate mt-1" style="font-size:.65rem;">
+                                                    <i class="bi bi-flag-fill me-1"></i>@entry.DefaultSource
+                                                </div>
+                                            }
+                                        </td>
                                     }
                                 </tr>
                             }
@@ -255,13 +278,14 @@ else
             </div>
 
             <div class="card-footer bg-light py-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex gap-3 small text-muted" id="summaryBar">
-                        <!-- filled by JS -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex flex-wrap gap-3 small text-muted" id="summaryBar"></div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="dirtyBadge" class="badge bg-warning text-dark d-none">Unsaved changes</span>
+                        <button type="submit" class="btn btn-success px-5" id="btnUpdate">
+                            <i class="bi bi-save me-2"></i>Update
+                        </button>
                     </div>
-                    <button type="submit" class="btn btn-success px-5">
-                        <i class="bi bi-save me-2"></i>Save Calendar
-                    </button>
                 </div>
             </div>
         </div>
@@ -271,11 +295,26 @@ else
 @section Scripts {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
+    const filterForm = document.getElementById('calendarFilter');
     const selects    = Array.from(document.querySelectorAll('.status-select'));
-    const summaryBar = document.getElementById('summaryBar');
+    const isDirty    = () => selects.some(s => s.value !== s.dataset.initial);
+    let submitting   = false;
 
-    // ── Colour badge next to date number on change ──────────────────────────
+    // ── Auto-load when Year / Month / Employee changes ─────────────────────
+    document.querySelectorAll('.js-autoload').forEach(el => {
+        el.addEventListener('change', function () {
+            if (!document.getElementById('fEmployee').value) return;
+            if (isDirty() && !confirm('You have unsaved changes. Discard them and load another calendar?')) {
+                this.value = this.querySelector('option[selected]')?.value ?? this.value;
+                return;
+            }
+            submitting = true;
+            filterForm.submit();
+        });
+    });
+
+    if (!selects.length) return;
+
     const badgeMap = {
         Working:    ['bg-success',   'text-white'],
         Off:        ['bg-secondary', 'text-white'],
@@ -284,61 +323,78 @@ document.addEventListener('DOMContentLoaded', function () {
         Provincial: ['bg-info',      'text-dark'],
         Strike:     ['bg-danger',    'text-white'],
     };
+    const textMap = { Working:'text-success', Off:'text-secondary', Sunday:'text-primary',
+                      Gazetted:'text-warning', Provincial:'text-info', Strike:'text-danger' };
 
-    function refreshBadge(sel) {
-        const badge = sel.closest('td').querySelector('.badge');
-        if (!badge) return;
-        badge.className = 'badge';
-        const cls = badgeMap[sel.value] || ['bg-secondary', 'text-white'];
-        cls.forEach(c => badge.classList.add(c));
+    const summaryBar    = document.getElementById('summaryBar');
+    const overrideCount = document.getElementById('overrideCount');
+    const dirtyBadge    = document.getElementById('dirtyBadge');
+    const chkWorking    = document.getElementById('chkSelectWorking');
+
+    function refreshCell(sel) {
+        const cell  = sel.closest('td');
+        const badge = cell.querySelector('.status-badge');
+        badge.className = 'badge status-badge ' + (badgeMap[sel.value] || badgeMap.Off).join(' ');
         badge.textContent = sel.value;
+        cell.querySelector('.override-mark').classList.toggle('d-none', sel.value === sel.dataset.default);
     }
 
-    function updateSummary() {
-        if (!summaryBar) return;
+    function refreshSummary() {
         const counts = {};
         selects.forEach(s => { counts[s.value] = (counts[s.value] || 0) + 1; });
-        const colors = { Working:'text-success', Off:'text-secondary', Sunday:'text-primary',
-                         Gazetted:'text-warning', Provincial:'text-info', Strike:'text-danger' };
         summaryBar.innerHTML = Object.entries(counts)
-            .map(([k,v]) => `<span class="${colors[k]||'text-muted'} fw-semibold">
-                               <i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>${k}: ${v}
-                             </span>`)
+            .map(([k, v]) => `<span class="${textMap[k] || 'text-muted'} fw-semibold">
+                                <i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>${k}: ${v}
+                              </span>`)
             .join('');
+        overrideCount.textContent = selects.filter(s => s.value !== s.dataset.default).length;
+        dirtyBadge.classList.toggle('d-none', !isDirty());
     }
 
-    selects.forEach(sel => {
-        sel.addEventListener('change', function () {
-            refreshBadge(this);
-            updateSummary();
+    function setValue(sel, value) {
+        if (!Array.from(sel.options).some(o => o.value === value)) return;
+        sel.value = value;
+        refreshCell(sel);
+    }
+
+    selects.forEach(sel => sel.addEventListener('change', function () {
+        refreshCell(this);
+        refreshSummary();
+    }));
+
+    // ── Select Working: mark all non weekly-off days as Working (restorable) ─
+    chkWorking.addEventListener('change', function () {
+        selects.forEach(sel => {
+            if (sel.dataset.default === 'Sunday') return;
+            if (this.checked) {
+                sel.dataset.prev = sel.value;
+                setValue(sel, 'Working');
+            } else if (sel.dataset.prev) {
+                setValue(sel, sel.dataset.prev);
+                delete sel.dataset.prev;
+            }
         });
+        refreshSummary();
     });
 
-    // ── Bulk actions ─────────────────────────────────────────────────────────
-    const btnReset = document.getElementById('btnResetDefaults');
-    if (btnReset) {
-        btnReset.addEventListener('click', function () {
-            selects.forEach(sel => {
-                sel.value = sel.dataset.isSunday === 'true' ? 'Sunday' : 'Working';
-                refreshBadge(sel);
-            });
-            updateSummary();
-        });
-    }
+    document.getElementById('btnResetDefaults').addEventListener('click', function () {
+        selects.forEach(sel => setValue(sel, sel.dataset.default));
+        chkWorking.checked = false;
+        refreshSummary();
+    });
 
-    const btnAllWork = document.getElementById('btnSetAllWorking');
-    if (btnAllWork) {
-        btnAllWork.addEventListener('click', function () {
-            selects.forEach(sel => {
-                sel.value = 'Working';
-                refreshBadge(sel);
-            });
-            updateSummary();
-        });
-    }
+    document.getElementById('calendarForm').addEventListener('submit', function () {
+        submitting = true;
+        const btn = document.getElementById('btnUpdate');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating…';
+    });
 
-    // Initial summary
-    updateSummary();
+    window.addEventListener('beforeunload', function (e) {
+        if (!submitting && isDirty()) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    refreshSummary();
 });
 </script>
 }
