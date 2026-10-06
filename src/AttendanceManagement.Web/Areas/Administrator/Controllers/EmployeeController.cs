@@ -282,12 +282,13 @@ public class EmployeeController : Controller
 
     private async Task PopulateLookupsAsync(EmployeeViewModel viewModel)
     {
-        var departments = await _context.Departments.Where(d => d.IsActive).OrderBy(d => d.Name).ToListAsync();
+        var companyId = viewModel.CompanyId;
+        var departments = await _context.Departments.Where(d => d.IsActive && d.CompanyId == companyId).OrderBy(d => d.Name).ToListAsync();
         var categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
         var designations = await _context.Designations.Where(d => d.IsActive).OrderBy(d => d.Name).ToListAsync();
-        var shifts = await _context.Shifts.Where(s => s.IsActive).OrderBy(s => s.Name).ToListAsync();
-        var leaves = await _context.Leaves.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
-        var employees = await _context.Employees.Where(e => e.IsActive).OrderBy(e => e.Name).ToListAsync();
+        var shifts = await _context.Shifts.Where(s => s.IsActive && s.CompanyId == companyId).OrderBy(s => s.Name).ToListAsync();
+        var leaves = await _context.Leaves.Where(l => l.IsActive && l.CompanyId == companyId).OrderBy(l => l.Name).ToListAsync();
+        var employees = await _context.Employees.Where(e => e.IsActive && e.CompanyId == companyId).OrderBy(e => e.Name).ToListAsync();
 
         viewModel.Departments = departments.Select(d => new SelectListItem(d.Name, d.Id.ToString(), d.Id == viewModel.DepartmentId)).ToList();
         viewModel.Categories = categories.Select(c => new SelectListItem(c.Name, c.Id.ToString(), c.Id == viewModel.CategoryId)).ToList();

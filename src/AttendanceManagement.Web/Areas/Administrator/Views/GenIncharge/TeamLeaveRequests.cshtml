@@ -1,0 +1,250 @@
+@model AttendanceManagement.Web.ViewModels.GenIncharge.TeamLeaveRequestsViewModel
+@{
+    ViewData["Title"] = "Team Leave Requests";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">Team Leave Requests</h2>
+        <small class="text-muted">Review and approve leave requests from your team</small>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@successMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+        <div class="card shadow-sm border-0 bg-warning bg-opacity-10 h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-3 fw-bold text-warning">@Model.PendingCount</div>
+                <div class="small text-muted">Pending Review</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card shadow-sm border-0 bg-success bg-opacity-10 h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-3 fw-bold text-success">@Model.ApprovedCount</div>
+                <div class="small text-muted">Approved</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card shadow-sm border-0 bg-danger bg-opacity-10 h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-3 fw-bold text-danger">@Model.RejectedCount</div>
+                <div class="small text-muted">Rejected</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Quick Filter -->
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-center">
+            <div class="col-auto">
+                <label class="form-label mb-0 fw-semibold small">Filter by Employee:</label>
+            </div>
+            <div class="col-md-4">
+                <select id="employeeFilter" class="form-select form-select-sm" onchange="filterByEmployee(this.value)">
+                    <option value="">All Team Members</option>
+                    @foreach (var emp in Model.Requests.Select(r => new { r.EmployeeId, r.EmployeeName, r.EmployeeNo }).DistinctBy(x => x.EmployeeId).OrderBy(x => x.EmployeeName))
+                    {
+                        <option value="@emp.EmployeeId">@emp.EmployeeName (@emp.EmployeeNo)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto ms-auto">
+                <a asp-action="EmployeeView" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-person-lines-fill me-1"></i>Employee Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<ul class="nav nav-tabs mb-3" id="leaveFilterTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" data-filter="all" onclick="filterRequests('all', this)">
+            All <span class="badge bg-secondary ms-1">@Model.Requests.Count</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-filter="pending" onclick="filterRequests('pending', this)">
+            Pending <span class="badge bg-warning ms-1">@Model.PendingCount</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-filter="approved" onclick="filterRequests('approved', this)">
+            Approved <span class="badge bg-success ms-1">@Model.ApprovedCount</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" data-filter="rejected" onclick="filterRequests('rejected', this)">
+            Rejected <span class="badge bg-danger ms-1">@Model.RejectedCount</span>
+        </button>
+    </li>
+</ul>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Requests.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="leaveTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Leave #</th>
+                            <th>Employee</th>
+                            <th>Leave Type</th>
+                            <th>Period</th>
+                            <th class="text-center">Days</th>
+                            <th>Reason</th>
+                            <th class="text-center">My Decision</th>
+                            <th class="text-center">Overall</th>
+                            <th class="text-center" style="width:130px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var req in Model.Requests)
+                        {
+                            var inchargeStatus = req.InchargeApprovalStatus ?? "Pending";
+                            var filterClass = inchargeStatus.ToLower();
+                            <tr data-status="@filterClass" data-employee="@req.EmployeeId">
+                                <td>
+                                    <span class="badge bg-light text-dark border">@req.LeaveNumber</span>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold">@req.EmployeeName</div>
+                                    <small class="text-muted">@req.EmployeeNo @(!string.IsNullOrWhiteSpace(req.DepartmentName) ? "· " + req.DepartmentName : "")</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info">@req.LeaveType</span>
+                                </td>
+                                <td class="small">
+                                    <div>@req.StartDate.ToString("dd MMM yyyy")</div>
+                                    <div class="text-muted">to @req.EndDate.ToString("dd MMM yyyy")</div>
+                                </td>
+                                <td class="text-center fw-bold">@req.TotalDays</td>
+                                <td class="text-muted small" style="max-width:180px;">
+                                    <span title="@req.Reason">
+                                        @(req.Reason?.Length > 60 ? req.Reason[..60] + "…" : req.Reason ?? "—")
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    @{
+                                        var (badgeClass, icon) = inchargeStatus switch
+                                        {
+                                            "Approved" => ("bg-success", "bi-check-circle-fill"),
+                                            "Rejected" => ("bg-danger", "bi-x-circle-fill"),
+                                            _ => ("bg-warning text-dark", "bi-hourglass-split")
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">
+                                        <i class="bi @icon me-1"></i>@inchargeStatus
+                                    </span>
+                                    @if (req.InchargeApprovedAt.HasValue)
+                                    {
+                                        <div class="text-muted" style="font-size:0.65rem;">@req.InchargeApprovedAt.Value.ToLocalTime().ToString("dd MMM, HH:mm")</div>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @{
+                                        var (overallClass, overallIcon) = req.Status switch
+                                        {
+                                            "Approved" => ("bg-success", "bi-check-circle-fill"),
+                                            "Rejected" => ("bg-danger", "bi-x-circle-fill"),
+                                            "Cancelled" => ("bg-secondary", "bi-slash-circle"),
+                                            _ => ("bg-warning text-dark", "bi-hourglass-split")
+                                        };
+                                    }
+                                    <span class="badge @overallClass">
+                                        <i class="bi @overallIcon me-1"></i>@req.Status
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    @if (inchargeStatus == "Pending" && req.Status == "Pending")
+                                    {
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <form asp-action="ApproveLeave" method="post" style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@req.Id" />
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve"
+                                                        onclick="return confirm('Approve leave @req.LeaveNumber?')">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </form>
+                                            <form asp-action="RejectLeave" method="post" style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@req.Id" />
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Reject"
+                                                        onclick="return confirm('Reject leave @req.LeaveNumber?')">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                <p class="mb-0">No leave requests found</p>
+                <small>Leave requests from your team members will appear here</small>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var activeStatus = 'all';
+        var activeEmployee = '';
+
+        function applyFilters() {
+            document.querySelectorAll('#leaveTable tbody tr').forEach(function(row) {
+                var statusOk = activeStatus === 'all' || row.dataset.status === activeStatus;
+                var empOk = activeEmployee === '' || row.dataset.employee === activeEmployee;
+                row.style.display = (statusOk && empOk) ? '' : 'none';
+            });
+        }
+
+        function filterRequests(status, btn) {
+            document.querySelectorAll('#leaveFilterTabs .nav-link').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeStatus = status;
+            applyFilters();
+        }
+
+        function filterByEmployee(empId) {
+            activeEmployee = empId;
+            applyFilters();
+        }
+    </script>
+}

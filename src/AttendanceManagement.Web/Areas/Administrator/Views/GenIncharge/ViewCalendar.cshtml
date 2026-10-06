@@ -1,0 +1,271 @@
+@model AttendanceManagement.Web.ViewModels.Calendar.CalendarViewModel
+@{
+    var isMyself = (ViewBag.ViewMode as string) == "myself";
+    var isTeam = !isMyself && ViewBag.SelectedEmployeeId == null;
+    var hasEmployee = ViewBag.SelectedEmployeeId != null;
+    var pageTitle = hasEmployee ? (ViewData["Title"] as string) ?? "Team Calendar"
+                  : isMyself ? "My Calendar"
+                  : "Team Calendar";
+    ViewData["Title"] = pageTitle;
+
+    var monthName = Model.CurrentMonth switch
+    {
+        1 => "January", 2 => "February", 3 => "March", 4 => "April",
+        5 => "May", 6 => "June", 7 => "July", 8 => "August",
+        9 => "September", 10 => "October", 11 => "November", 12 => "December",
+        _ => "Unknown"
+    };
+    var daysInMonth = DateTime.DaysInMonth(Model.CurrentYear, Model.CurrentMonth);
+    var firstDayOfWeek = (int)new DateTime(Model.CurrentYear, Model.CurrentMonth, 1).DayOfWeek;
+    var ownLeaveCount = Model.Events.Count(e => e.Type == "Leave");
+    var teamLeaveCount = Model.Events.Count(e => e.Type == "TeamLeave");
+    var holidayCount = Model.Events.Count(e => e.Type == "Holiday");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">@ViewData["Title"]</h2>
+        <small class="text-muted">
+            @if (isMyself)
+            {
+                @:Personal calendar for @Model.EmployeeName
+            }
+            else if (hasEmployee)
+            {
+                @:Calendar for selected employee
+            }
+            else
+            {
+                @:Overview of team leave, holidays and events for @Model.EmployeeName
+            }
+        </small>
+    </div>
+    <div class="btn-group" role="group" aria-label="Calendar view">
+        <a href="?month=@Model.CurrentMonth&year=@Model.CurrentYear&viewMode=myself"
+           class="btn btn-outline-primary @(isMyself && !hasEmployee ? "active" : "")">
+            <i class="bi bi-person me-1"></i>Myself
+        </a>
+        <a href="?month=@Model.CurrentMonth&year=@Model.CurrentYear&viewMode=team"
+           class="btn btn-outline-primary @(isTeam ? "active" : "")">
+            <i class="bi bi-people me-1"></i>Team Calendar
+        </a>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Month/Year / Employee Selector -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <input type="hidden" name="viewMode" value="@(ViewBag.ViewMode as string ?? "team")" />
+            <div class="col-md-@(isMyself ? "5" : "3")">
+                <label class="form-label fw-semibold">Month</label>
+                <select name="month" class="form-select" asp-items="Model.MonthOptions">
+                    <option value="">-- Month --</option>
+                </select>
+            </div>
+            <div class="col-md-@(isMyself ? "4" : "2")">
+                <label class="form-label fw-semibold">Year</label>
+                <select name="year" class="form-select" asp-items="Model.YearOptions">
+                    <option value="">-- Year --</option>
+                </select>
+            </div>
+            @if (!isMyself)
+            {
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Employee</label>
+                    <select name="employeeId" class="form-select" asp-items="@((IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.TeamEmployeeOptions)" onchange="this.form.submit()">
+                    </select>
+                </div>
+            }
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+            </div>
+            <div class="col-md-1">
+                <a href="?month=@DateTime.Now.Month&year=@DateTime.Now.Year&viewMode=team" class="btn btn-outline-secondary w-100" title="Reset">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm text-center border-0 bg-primary bg-opacity-10 h-100">
+            <div class="card-body py-3">
+                <div class="fs-4 fw-bold text-primary">@Model.Events.Count</div>
+                <div class="small text-muted">Total Events</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm text-center border-0 bg-warning bg-opacity-10 h-100">
+            <div class="card-body py-3">
+                <div class="fs-4 fw-bold text-warning">@ownLeaveCount</div>
+                <div class="small text-muted">My Leaves</div>
+            </div>
+        </div>
+    </div>
+    @if (!isMyself)
+    {
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm text-center border-0 bg-info bg-opacity-10 h-100">
+                <div class="card-body py-3">
+                    <div class="fs-4 fw-bold text-info">@teamLeaveCount</div>
+                    <div class="small text-muted">@(hasEmployee ? "Employee Leaves" : "Team Leaves")</div>
+                </div>
+            </div>
+        </div>
+    }
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm text-center border-0 bg-success bg-opacity-10 h-100">
+            <div class="card-body py-3">
+                <div class="fs-4 fw-bold text-success">@holidayCount</div>
+                <div class="small text-muted">Holidays</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Calendar Header -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-calendar-month me-2"></i>@monthName @Model.CurrentYear</h5>
+        <!-- Legend -->
+        <div class="d-flex gap-3 flex-wrap">
+            <span><span class="badge" style="background:#fd7e14">&nbsp;</span> <small>My Leave</small></span>
+            <span><span class="badge" style="background:#0d6efd">&nbsp;</span> <small>Team Leave</small></span>
+            <span><span class="badge" style="background:#198754">&nbsp;</span> <small>Holiday</small></span>
+            <span><span class="badge" style="background:#e83e8c">&nbsp;</span> <small>Birthday</small></span>
+        </div>
+    </div>
+</div>
+
+<!-- Calendar Grid -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0 calendar-table">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center">Sun</th>
+                        <th class="text-center">Mon</th>
+                        <th class="text-center">Tue</th>
+                        <th class="text-center">Wed</th>
+                        <th class="text-center">Thu</th>
+                        <th class="text-center">Fri</th>
+                        <th class="text-center">Sat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var day = 1;
+                        for (var week = 0; week < 6; week++)
+                        {
+                            if (day > daysInMonth) break;
+                            <tr>
+                                @for (var dow = 0; dow < 7; dow++)
+                                {
+                                    if ((week == 0 && dow < firstDayOfWeek) || day > daysInMonth)
+                                    {
+                                        <td class="text-muted bg-light" style="min-height:100px;"></td>
+                                    }
+                                    else
+                                    {
+                                        var currentDate = new DateTime(Model.CurrentYear, Model.CurrentMonth, day);
+                                        var dayEvents = Model.Events.Where(e => e.Date.Date == currentDate.Date).ToList();
+                                        var isToday = currentDate.Date == DateTime.Today;
+                                        var isWeekend = dow == 0 || dow == 6;
+                                        <td class="@(isToday ? "today" : "") @(isWeekend ? "weekend" : "")" style="min-height:100px; vertical-align:top;">
+                                            <div class="d-flex justify-content-between">
+                                                <span class="fw-semibold @(isToday ? "text-primary" : "")">@day</span>
+                                                @if (isToday)
+                                                {
+                                                    <span class="badge bg-primary rounded-pill" style="font-size:0.6rem;">Today</span>
+                                                }
+                                            </div>
+                                            @foreach (var evt in dayEvents)
+                                            {
+                                                <div class="mt-1" title="@evt.Description">
+                                                    <span class="badge" style="background-color:@evt.Color; font-size:0.6rem; white-space:normal; text-align:left;">
+                                                        @evt.Title
+                                                    </span>
+                                                </div>
+                                            }
+                                        </td>
+                                        day++;
+                                    }
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Events List -->
+@if (Model.Events.Any())
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="mb-0"><i class="bi bi-list-ul me-2 text-primary"></i>Events This Month</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                @foreach (var evt in Model.Events.OrderBy(e => e.Date))
+                {
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-start">
+                            <div class="me-3 rounded-circle flex-shrink-0" style="width:12px;height:12px;background-color:@evt.Color;margin-top:4px;"></div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">@evt.Title</div>
+                                <small class="text-muted">
+                                    @evt.Date.ToString("dd MMM yyyy") &bull;
+                                    @(evt.Type switch { "Leave" => "My Leave", "TeamLeave" => "Team Leave", "Holiday" => "Holiday", "Birthday" => "Birthday", _ => evt.Type })
+                                </small>
+                                @if (!string.IsNullOrWhiteSpace(evt.Description))
+                                {
+                                    <div class="small text-muted mt-1">@evt.Description</div>
+                                }
+                            </div>
+                            <span class="badge bg-light text-dark flex-shrink-0">
+                                @(evt.Type switch { "Leave" => "My Leave", "TeamLeave" => "Team", "Holiday" => "Holiday", "Birthday" => "Birthday", _ => evt.Type })
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-calendar-event fs-1 d-block mb-2"></i>
+            <p class="mb-0">No events this month</p>
+            <small>Holidays, approved leaves, and birthdays will appear here</small>
+        </div>
+    </div>
+}
+
+<style>
+    .calendar-table td { border: 1px solid #dee2e6; transition: background-color .2s; }
+    .calendar-table td.today { background-color: #e7f1ff !important; }
+    .calendar-table td.weekend { background-color: #f8f9fa; }
+    .calendar-table td:hover { background-color: #e9ecef; }
+    .calendar-table th { border: 1px solid #dee2e6; }
+</style>

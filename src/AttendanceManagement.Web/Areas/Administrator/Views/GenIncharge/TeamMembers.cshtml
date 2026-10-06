@@ -1,0 +1,144 @@
+@model AttendanceManagement.Web.ViewModels.GenIncharge.TeamMembersViewModel
+@{
+    ViewData["Title"] = "Team Members";
+    var activeCount = Model.Members.Count(m => m.IsActive);
+    var inactiveCount = Model.Members.Count(m => !m.IsActive);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">Team Members</h2>
+        <small class="text-muted">Employees under your supervision — @Model.InchargeName (@Model.InchargeNo)</small>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@successMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+        <div class="card shadow-sm border-0 bg-primary bg-opacity-10 h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-3 fw-bold text-primary">@Model.Members.Count</div>
+                <div class="small text-muted">Total Members</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card shadow-sm border-0 bg-success bg-opacity-10 h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-3 fw-bold text-success">@activeCount</div>
+                <div class="small text-muted">Active</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card shadow-sm border-0 bg-secondary bg-opacity-10 h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-3 fw-bold text-secondary">@inactiveCount</div>
+                <div class="small text-muted">Inactive</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-people me-2 text-primary"></i>Team Members</h5>
+        <input type="text" id="searchBox" class="form-control form-control-sm" style="max-width:240px;" placeholder="Search members…" oninput="filterTable()" />
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Members.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="membersTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Designation</th>
+                            <th>Shift</th>
+                            <th>Type</th>
+                            <th>Joining Date</th>
+                            <th>Contact</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in Model.Members)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width:36px;height:36px;">
+                                            <span class="fw-bold text-primary small">@m.Name[..Math.Min(2, m.Name.Length)].ToUpper()</span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">@m.Name</div>
+                                            <small class="text-muted">@m.EmployeeNo</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-muted small">@(m.DepartmentName ?? "—")</td>
+                                <td class="text-muted small">@(m.DesignationName ?? "—")</td>
+                                <td class="text-muted small">@(m.ShiftName ?? "—")</td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info">@(m.EmployeeType ?? "—")</span>
+                                </td>
+                                <td class="text-muted small">
+                                    @(m.JoiningDate.HasValue ? m.JoiningDate.Value.ToString("dd MMM yyyy") : "—")
+                                </td>
+                                <td class="text-muted small">
+                                    @if (!string.IsNullOrWhiteSpace(m.Email))
+                                    {
+                                        <div><i class="bi bi-envelope me-1"></i>@m.Email</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(m.Phone))
+                                    {
+                                        <div><i class="bi bi-telephone me-1"></i>@m.Phone</div>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (m.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-people fs-1 d-block mb-2"></i>
+                <p class="mb-0">No team members found</p>
+                <small>Employees assigned under your supervision will appear here</small>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterTable() {
+            var q = document.getElementById('searchBox').value.toLowerCase();
+            document.querySelectorAll('#membersTable tbody tr').forEach(function(row) {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+    </script>
+}

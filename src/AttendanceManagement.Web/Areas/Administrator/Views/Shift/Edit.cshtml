@@ -415,7 +415,13 @@
             // Handle copy from previous
             var copyCheckboxes = document.querySelectorAll('.copy-checkbox');
             for (var k = 0; k < copyCheckboxes.length; k++) {
-                copyCheckboxes[k].addEventListener('change', function() {
+                var cb = copyCheckboxes[k];
+                var copyOptions = document.querySelector('.copy-options[data-day-index="' + cb.dataset.dayIndex + '"]');
+                if (copyOptions) {
+                    copyOptions.classList.toggle('d-none', !cb.checked);
+                }
+
+                cb.addEventListener('change', function() {
                     var dayIndex = this.dataset.dayIndex;
                     var copyOptions = document.querySelector('.copy-options[data-day-index="' + dayIndex + '"]');
                     if (copyOptions) {

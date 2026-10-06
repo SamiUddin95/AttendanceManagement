@@ -61,16 +61,10 @@
                                     @if (role.RoleModules.Any())
                                     {
                                         <div class="d-flex flex-wrap gap-1">
-                                            @foreach (var rm in role.RoleModules)
+                                            @foreach (var rm in role.RoleModules.Where(m => m.CanView))
                                             {
                                                 <span class="badge bg-info-subtle text-info small">
-                                                    @rm.ModuleDisplayName
-                                                    <span class="ms-1">
-                                                        @(rm.CanView ? "<i class='bi bi-eye'></i>" : "")
-                                                        @(rm.CanCreate ? "<i class='bi bi-plus'></i>" : "")
-                                                        @(rm.CanEdit ? "<i class='bi bi-pencil'></i>" : "")
-                                                        @(rm.CanDelete ? "<i class='bi bi-trash'></i>" : "")
-                                                    </span>
+                                                    <i class="bi bi-eye me-1"></i>@rm.ModuleDisplayName
                                                 </span>
                                             }
                                         </div>

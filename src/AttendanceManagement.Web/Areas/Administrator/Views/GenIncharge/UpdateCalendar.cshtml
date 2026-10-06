@@ -1,0 +1,344 @@
+@model AttendanceManagement.Web.ViewModels.GenIncharge.UpdateCalendarViewModel
+@{
+    ViewData["Title"] = "Update Calendar";
+    var statusColors = new Dictionary<string, (string bg, string text)>
+    {
+        ["Working"]    = ("bg-success",         "text-white"),
+        ["Off"]        = ("bg-secondary",        "text-white"),
+        ["Sunday"]     = ("bg-primary",          "text-white"),
+        ["Gazetted"]   = ("bg-warning",          "text-dark"),
+        ["Provincial"] = ("bg-info",             "text-dark"),
+        ["Strike"]     = ("bg-danger",           "text-white"),
+    };
+}
+
+@if (TempData["SuccessMessage"] is string successMsg)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@successMsg
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] is string errorMsg)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMsg
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- ═══════════════════  FILTER FORM  ═══════════════════ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0 fw-semibold">
+            <i class="bi bi-calendar3 me-2 text-primary"></i>Update Employee Calendar
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" asp-action="UpdateCalendar" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">
+                    Employee <span class="text-danger">*</span>
+                </label>
+                <select name="employeeId" class="form-select" required
+                        asp-items="Model.EmployeeOptions">
+                    <option value="">— Select a team member —</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Month</label>
+                <select name="month" class="form-select">
+                    @foreach (var m in Model.AvailableMonths)
+                    {
+                        if (Model.SelectedMonth == m.Value)
+                        {
+                            <option value="@m.Value" selected>@m.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@m.Value">@m.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Year</label>
+                <select name="year" class="form-select">
+                    @foreach (var y in Model.AvailableYears)
+                    {
+                        if (Model.SelectedYear == y)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-calendar-check me-1"></i>Load Calendar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.HasCalendar)
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-calendar3 fs-1 d-block mb-3 text-primary opacity-50"></i>
+            <h5 class="fw-semibold">Select an Employee &amp; Period</h5>
+            <p class="mb-0 small">Choose a team member, month, and year then click
+                <strong>Load Calendar</strong> to begin editing.</p>
+        </div>
+    </div>
+}
+else
+{
+    <!-- ═══════════════════  EMPLOYEE HEADER  ═══════════════════ -->
+    <div class="card shadow-sm mb-4 border-0"
+         style="background: linear-gradient(135deg,#1e3a5f 0%,#2d6a9f 100%);">
+        <div class="card-body py-3 text-white">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center
+                                justify-content-center" style="width:52px;height:52px;">
+                        <span class="fw-bold fs-5 text-white">
+                            @Model.EmployeeName!.Substring(0, Math.Min(2, Model.EmployeeName.Length)).ToUpper()
+                        </span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="fw-bold fs-5">@Model.EmployeeName</div>
+                    <div class="small opacity-75">
+                        <i class="bi bi-person-badge me-1"></i>@Model.EmployeeNo
+                        @if (!string.IsNullOrWhiteSpace(Model.Department))
+                        {
+                            <span class="ms-2"><i class="bi bi-building me-1"></i>@Model.Department</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.Designation))
+                        {
+                            <span class="ms-2"><i class="bi bi-briefcase me-1"></i>@Model.Designation</span>
+                        }
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-white bg-opacity-25 px-3 py-2 fs-6">
+                        <i class="bi bi-calendar-month me-2"></i>@Model.MonthYearDisplay
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════  STATUS LEGEND  ═══════════════════ -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <span class="fw-semibold text-muted small me-1">
+                    <i class="bi bi-info-circle me-1"></i>Legend:
+                </span>
+                @foreach (var (status, (bg, fg)) in statusColors)
+                {
+                    <span class="badge @bg @fg px-3 py-2">@status</span>
+                }
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            id="btnResetDefaults" title="Reset Sundays to Sunday, all others to Working">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Defaults
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success"
+                            id="btnSetAllWorking" title="Set all days to Working">
+                        <i class="bi bi-check-all me-1"></i>Set All Working
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════  CALENDAR SAVE FORM  ═══════════════════ -->
+    <form asp-action="SaveCalendar" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="employeeId" value="@Model.SelectedEmployeeId" />
+        <input type="hidden" name="month"      value="@Model.SelectedMonth" />
+        <input type="hidden" name="year"       value="@Model.SelectedYear" />
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-pencil-square me-2"></i>@Model.MonthYearDisplay — Daily Status
+                    </h5>
+                    <small class="opacity-75">@Model.CalendarDays.Count days total</small>
+                </div>
+            </div>
+
+            <!-- ── WEEK-HEADER GRID ── -->
+            <div class="card-body p-3">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle mb-0"
+                           style="min-width:900px;">
+                        <thead class="table-dark">
+                            <tr>
+                                @foreach (var dow in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+                                {
+                                    <th class="text-center py-2" style="width:14.28%;">@dow</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                var firstDay     = new DateTime(Model.SelectedYear, Model.SelectedMonth, 1);
+                                var startOffset  = (int)firstDay.DayOfWeek; // 0=Sun … 6=Sat
+                                var allDays      = Model.CalendarDays;
+                                int totalCells   = startOffset + allDays.Count;
+                                int totalRows    = (int)Math.Ceiling(totalCells / 7.0);
+                                int dayIndex     = 0;
+                            }
+                            @for (int row = 0; row < totalRows; row++)
+                            {
+                                <tr>
+                                    @for (int col = 0; col < 7; col++)
+                                    {
+                                        int cellIndex = row * 7 + col;
+                                        bool isEmpty  = cellIndex < startOffset || dayIndex >= allDays.Count;
+                                        if (isEmpty)
+                                        {
+                                            <td class="bg-light" style="height:90px;"></td>
+                                        }
+                                        else
+                                        {
+                                            var entry    = allDays[dayIndex++];
+                                            var isSun    = entry.IsSunday;
+                                            var (sbg, sfg) = statusColors.TryGetValue(entry.DayStatus, out var sc)
+                                                ? sc : ("bg-secondary", "text-white");
+                                            <td class="p-2 @(isSun ? "bg-primary bg-opacity-10" : "")"
+                                                style="height:90px; vertical-align:top;">
+                                                <!-- Date number + day name -->
+                                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                                    <span class="fw-bold @(isSun ? "text-primary" : "text-dark")">
+                                                        @entry.Date.Day
+                                                    </span>
+                                                    <span class="badge @sbg @sfg" style="font-size:0.62rem;">
+                                                        @entry.DayStatus
+                                                    </span>
+                                                </div>
+                                                <!-- Status dropdown -->
+                                                <select name="status_@entry.DateKey"
+                                                        class="form-select form-select-sm status-select mt-1"
+                                                        data-is-sunday="@(isSun ? "true" : "false")"
+                                                        style="font-size:0.75rem;">
+                                                    @foreach (var opt in AttendanceManagement.Web.ViewModels.GenIncharge.UpdateCalendarViewModel.DayStatusOptions)
+                                                    {
+                                                        if (entry.DayStatus == opt)
+                                                        {
+                                                            <option value="@opt" selected>@opt</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@opt">@opt</option>
+                                                        }
+                                                    }
+                                                </select>
+                                            </td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer bg-light py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex gap-3 small text-muted" id="summaryBar">
+                        <!-- filled by JS -->
+                    </div>
+                    <button type="submit" class="btn btn-success px-5">
+                        <i class="bi bi-save me-2"></i>Save Calendar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+}
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const selects    = Array.from(document.querySelectorAll('.status-select'));
+    const summaryBar = document.getElementById('summaryBar');
+
+    // ── Colour badge next to date number on change ──────────────────────────
+    const badgeMap = {
+        Working:    ['bg-success',   'text-white'],
+        Off:        ['bg-secondary', 'text-white'],
+        Sunday:     ['bg-primary',   'text-white'],
+        Gazetted:   ['bg-warning',   'text-dark'],
+        Provincial: ['bg-info',      'text-dark'],
+        Strike:     ['bg-danger',    'text-white'],
+    };
+
+    function refreshBadge(sel) {
+        const badge = sel.closest('td').querySelector('.badge');
+        if (!badge) return;
+        badge.className = 'badge';
+        const cls = badgeMap[sel.value] || ['bg-secondary', 'text-white'];
+        cls.forEach(c => badge.classList.add(c));
+        badge.textContent = sel.value;
+    }
+
+    function updateSummary() {
+        if (!summaryBar) return;
+        const counts = {};
+        selects.forEach(s => { counts[s.value] = (counts[s.value] || 0) + 1; });
+        const colors = { Working:'text-success', Off:'text-secondary', Sunday:'text-primary',
+                         Gazetted:'text-warning', Provincial:'text-info', Strike:'text-danger' };
+        summaryBar.innerHTML = Object.entries(counts)
+            .map(([k,v]) => `<span class="${colors[k]||'text-muted'} fw-semibold">
+                               <i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>${k}: ${v}
+                             </span>`)
+            .join('');
+    }
+
+    selects.forEach(sel => {
+        sel.addEventListener('change', function () {
+            refreshBadge(this);
+            updateSummary();
+        });
+    });
+
+    // ── Bulk actions ─────────────────────────────────────────────────────────
+    const btnReset = document.getElementById('btnResetDefaults');
+    if (btnReset) {
+        btnReset.addEventListener('click', function () {
+            selects.forEach(sel => {
+                sel.value = sel.dataset.isSunday === 'true' ? 'Sunday' : 'Working';
+                refreshBadge(sel);
+            });
+            updateSummary();
+        });
+    }
+
+    const btnAllWork = document.getElementById('btnSetAllWorking');
+    if (btnAllWork) {
+        btnAllWork.addEventListener('click', function () {
+            selects.forEach(sel => {
+                sel.value = 'Working';
+                refreshBadge(sel);
+            });
+            updateSummary();
+        });
+    }
+
+    // Initial summary
+    updateSummary();
+});
+</script>
+}

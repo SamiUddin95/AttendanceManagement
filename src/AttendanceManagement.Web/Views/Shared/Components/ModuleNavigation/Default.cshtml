@@ -47,6 +47,18 @@
         new { Title = "Leave Policy",      Icon = "bi-calendar-check", Area = "Administrator", Controller = "GenEmployee", Action = "LeavePolicy"     },
         new { Title = "In Out Timings",    Icon = "bi-clock",          Area = "Administrator", Controller = "GenEmployee", Action = "InOutTimings"    }
     };
+
+    var genInchargeSubPages = new[]
+    {
+        new { Title = "Team Calendar",       Icon = "bi-calendar-week",   Area = "Administrator", Controller = "GenIncharge", Action = "ViewCalendar"       },
+        new { Title = "Team Members",        Icon = "bi-people",           Area = "Administrator", Controller = "GenIncharge", Action = "TeamMembers"        },
+        new { Title = "Employee View",       Icon = "bi-person-lines-fill",Area = "Administrator", Controller = "GenIncharge", Action = "EmployeeView"       },
+        new { Title = "Team Leave Requests", Icon = "bi-calendar-check",   Area = "Administrator", Controller = "GenIncharge", Action = "TeamLeaveRequests"  },
+        new { Title = "Leave Flexis Chart",  Icon = "bi-bar-chart",        Area = "Administrator", Controller = "GenIncharge", Action = "LeaveFlexisChart"   },
+        new { Title = "In Out Timings",      Icon = "bi-clock",            Area = "Administrator", Controller = "GenIncharge", Action = "InOutTimings"       },
+        new { Title = "Leave Sheet",         Icon = "bi-file-earmark-text", Area = "Administrator", Controller = "GenIncharge", Action = "LeaveSheet"         },
+        new { Title = "Update Calendar",     Icon = "bi-calendar-plus",     Area = "Administrator", Controller = "GenIncharge", Action = "UpdateCalendar"     }
+    };
 }
 
 @foreach (var module in Model.OrderBy(m => m.SortOrder).ThenBy(m => m.DisplayName))
@@ -104,6 +116,26 @@
             </button>
             <ul class="dropdown-menu">
                 @foreach (var subPage in genEmployeeSubPages)
+                {
+                    <li>
+                        <a asp-area="@subPage.Area" asp-controller="@subPage.Controller" asp-action="@subPage.Action"
+                           class="dropdown-item @(IsActive(subPage.Area, subPage.Controller, subPage.Action) ? "active" : "")">
+                            <i class="bi @subPage.Icon me-2"></i>@subPage.Title
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+    else if (string.Equals(module.Name, "GenIncharge", StringComparison.OrdinalIgnoreCase))
+    {
+        var isDropdownActive = genInchargeSubPages.Any(p => IsActive(p.Area, p.Controller, p.Action));
+        <div class="dropdown">
+            <button class="nav-link dropdown-toggle @(isDropdownActive ? "active" : "")" type="button" data-bs-toggle="dropdown">
+                <i class="bi @module.Icon me-1"></i>@module.DisplayName
+            </button>
+            <ul class="dropdown-menu">
+                @foreach (var subPage in genInchargeSubPages)
                 {
                     <li>
                         <a asp-area="@subPage.Area" asp-controller="@subPage.Controller" asp-action="@subPage.Action"

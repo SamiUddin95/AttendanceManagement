@@ -33,6 +33,7 @@ public class AttendanceDbContext : DbContext
     public DbSet<MarkDay> MarkDays => Set<MarkDay>();
     public DbSet<GroupEmployee> GroupEmployees => Set<GroupEmployee>();
     public DbSet<Attendance> Attendances => Set<Attendance>();
+    public DbSet<EmployeeCalendarDay> EmployeeCalendarDays => Set<EmployeeCalendarDay>();
     public DbSet<Module> Modules => Set<Module>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<RoleModule> RoleModules => Set<RoleModule>();
@@ -403,6 +404,25 @@ public class AttendanceDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EmployeeCalendarDay>(entity =>
+        {
+            entity.ToTable("EmployeeCalendarDays");
+            entity.Property(e => e.DayStatus).HasMaxLength(30).HasDefaultValue("Working");
+            entity.HasIndex(e => new { e.EmployeeId, e.Date }).IsUnique();
+            entity.HasOne(e => e.Company)
+                .WithMany()
+                .HasForeignKey(e => e.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Employee)
+                .WithMany()
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.UpdatedByEmployee)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByEmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Module>(entity =>

@@ -1,0 +1,324 @@
+@model AttendanceManagement.Web.ViewModels.GenIncharge.EmployeeViewViewModel
+@{
+    ViewData["Title"] = "Employee View";
+    var p = Model.Profile;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1">Employee View</h2>
+        <small class="text-muted">Select a team member to view their profile, leave balance, and history</small>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Employee Selector -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Select Employee</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Team Member</label>
+                <select name="employeeId" class="form-select" onchange="this.form.submit()" asp-items="Model.EmployeeOptions">
+                    <option value="">-- Select a team member --</option>
+                </select>
+            </div>
+            @if (Model.SelectedEmployeeId.HasValue)
+            {
+                <div class="col-md-3">
+                    <a href="?employeeId=@Model.SelectedEmployeeId" class="btn btn-primary w-100">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a asp-action="ViewCalendar" asp-route-employeeId="@Model.SelectedEmployeeId" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-calendar-week me-2"></i>View Calendar
+                    </a>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+@if (p != null)
+{
+    <!-- Profile Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Employee Profile</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Avatar + Name -->
+                    <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:64px;height:64px;">
+                            <span class="fw-bold text-primary fs-4">@p.Name[..Math.Min(2, p.Name.Length)].ToUpper()</span>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-5">@p.Name</div>
+                            <div class="text-muted small">@p.EmployeeNo</div>
+                            @if (p.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Work Info -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="small text-muted fw-semibold text-uppercase mb-1">Department</div>
+                            <div class="small">@(p.DepartmentName ?? "—")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted fw-semibold text-uppercase mb-1">Designation</div>
+                            <div class="small">@(p.DesignationName ?? "—")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted fw-semibold text-uppercase mb-1">Category</div>
+                            <div class="small">@(p.CategoryName ?? "—")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted fw-semibold text-uppercase mb-1">Shift</div>
+                            <div class="small">@(p.ShiftName ?? "—")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted fw-semibold text-uppercase mb-1">Employee Type</div>
+                            <div class="small"><span class="badge bg-info-subtle text-info">@(p.EmployeeType ?? "—")</span></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted fw-semibold text-uppercase mb-1">Leave Policy</div>
+                            <div class="small">@(p.LeaveName ?? "—")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted fw-semibold text-uppercase mb-1">Joining Date</div>
+                            <div class="small">@(p.JoiningDate.HasValue ? p.JoiningDate.Value.ToString("dd MMM yyyy") : "—")</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted fw-semibold text-uppercase mb-1">Overtime</div>
+                            <div class="small">
+                                @if (p.OverTimeEntitled)
+                                {
+                                    <span class="badge bg-success-subtle text-success">Entitled</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary">Not Entitled</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Info -->
+                    <div class="border-top pt-3">
+                        <div class="small text-muted fw-semibold text-uppercase mb-2">Personal Information</div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="small text-muted">Gender</div>
+                                <div class="small">@(p.Gender ?? "—")</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="small text-muted">Blood Group</div>
+                                <div class="small">@(p.BloodGroup ?? "—")</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="small text-muted">Date of Birth</div>
+                                <div class="small">@(p.DateOfBirth.HasValue ? p.DateOfBirth.Value.ToString("dd MMM yyyy") : "—")</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="small text-muted">CNIC</div>
+                                <div class="small">@(p.CNIC ?? "—")</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact -->
+                    <div class="border-top pt-3 mt-2">
+                        <div class="small text-muted fw-semibold text-uppercase mb-2">Contact</div>
+                        @if (!string.IsNullOrWhiteSpace(p.Email))
+                        {
+                            <div class="small mb-1"><i class="bi bi-envelope text-primary me-2"></i>@p.Email</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(p.Phone))
+                        {
+                            <div class="small mb-1"><i class="bi bi-telephone text-primary me-2"></i>@p.Phone</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(p.Cell))
+                        {
+                            <div class="small mb-1"><i class="bi bi-phone text-primary me-2"></i>@p.Cell</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(p.Address))
+                        {
+                            <div class="small"><i class="bi bi-geo-alt text-primary me-2"></i>@p.Address</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Balance Panel -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2 text-primary"></i>Leave Balance</h5>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-primary">@Model.TotalEntitledDays Entitled</span>
+                        <span class="badge bg-warning text-dark">@Model.TotalUsedDays Used</span>
+                        <span class="badge bg-success">@Model.TotalRemainingDays Left</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.LeaveBalances.Any())
+                    {
+                        @foreach (var b in Model.LeaveBalances)
+                        {
+                            var pct = b.UsagePercentage;
+                            var barClass = pct >= 90 ? "bg-danger" : pct >= 70 ? "bg-warning" : "bg-success";
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-info-subtle text-info">@b.LeaveType</span>
+                                        @if (b.CarryForward)
+                                        {
+                                            <span class="badge bg-success-subtle text-success" style="font-size:0.65rem;">
+                                                <i class="bi bi-arrow-repeat"></i> Carry
+                                            </span>
+                                        }
+                                    </div>
+                                    <span class="small fw-semibold">@b.UsedDays / @b.EntitledDays days (@pct.ToString("F0")%)</span>
+                                </div>
+                                <div class="progress" style="height:10px;">
+                                    <div class="progress-bar @barClass" style="width:@Math.Min(pct,100)%" role="progressbar"></div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-1" style="font-size:0.72rem;">
+                                    <span class="text-danger"><i class="bi bi-x-circle me-1"></i>@b.UsedDays Used</span>
+                                    <span class="text-success"><i class="bi bi-check-circle me-1"></i>@b.RemainingDays Remaining</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-bar-chart fs-2 d-block mb-2"></i>
+                            <p class="mb-0 small">No leave policy assigned to this employee</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Quick action links -->
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-action="ViewCalendar" asp-route-employeeId="@p.Id" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-calendar-week me-1"></i>View Calendar
+                </a>
+                <a asp-action="TeamLeaveRequests" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-calendar-check me-1"></i>Team Leave Requests
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave History -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Leave History — @p.Name</h5>
+            <span class="badge bg-secondary">@Model.LeaveHistory.Count requests</span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.LeaveHistory.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Leave #</th>
+                                <th>Type</th>
+                                <th>Period</th>
+                                <th class="text-center">Days</th>
+                                <th>Reason</th>
+                                <th class="text-center">My Decision</th>
+                                <th class="text-center">Status</th>
+                                <th>Applied</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var h in Model.LeaveHistory)
+                            {
+                                var inchargeStatus = h.InchargeApprovalStatus ?? "Pending";
+                                <tr>
+                                    <td><span class="badge bg-light text-dark border">@h.LeaveNumber</span></td>
+                                    <td><span class="badge bg-info-subtle text-info">@h.LeaveType</span></td>
+                                    <td class="small">
+                                        <div>@h.StartDate.ToString("dd MMM yyyy")</div>
+                                        <div class="text-muted">to @h.EndDate.ToString("dd MMM yyyy")</div>
+                                    </td>
+                                    <td class="text-center fw-bold">@h.TotalDays</td>
+                                    <td class="text-muted small" style="max-width:150px;">
+                                        <span title="@h.Reason">@(h.Reason?.Length > 50 ? h.Reason[..50] + "…" : h.Reason ?? "—")</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @{
+                                            var (ic, ii) = inchargeStatus switch
+                                            {
+                                                "Approved" => ("bg-success", "bi-check-circle-fill"),
+                                                "Rejected" => ("bg-danger", "bi-x-circle-fill"),
+                                                _ => ("bg-warning text-dark", "bi-hourglass-split")
+                                            };
+                                        }
+                                        <span class="badge @ic"><i class="bi @ii me-1"></i>@inchargeStatus</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @{
+                                            var (sc, si) = h.Status switch
+                                            {
+                                                "Approved" => ("bg-success", "bi-check-circle-fill"),
+                                                "Rejected" => ("bg-danger", "bi-x-circle-fill"),
+                                                "Cancelled" => ("bg-secondary", "bi-slash-circle"),
+                                                _ => ("bg-warning text-dark", "bi-hourglass-split")
+                                            };
+                                        }
+                                        <span class="badge @sc"><i class="bi @si me-1"></i>@h.Status</span>
+                                    </td>
+                                    <td class="text-muted small">@h.CreatedAtUtc.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                    <p class="mb-0">No leave history for this employee</p>
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (!Model.SelectedEmployeeId.HasValue)
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-person-lines-fill fs-1 d-block mb-3 text-primary opacity-50"></i>
+            <h5 class="fw-semibold">Select a Team Member</h5>
+            <p class="mb-0 small">Choose an employee from the dropdown above to view their profile, leave balance, and history.</p>
+        </div>
+    </div>
+}
