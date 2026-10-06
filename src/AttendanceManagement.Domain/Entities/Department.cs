@@ -10,7 +10,8 @@ public class Department
     [Required, MaxLength(150)]
     public string Name { get; set; } = string.Empty;
 
-    public Guid CompanyId { get; set; }
+    // Null = shared department available to all companies (created from Lookups)
+    public Guid? CompanyId { get; set; }
 
     public Company? Company { get; set; }
 

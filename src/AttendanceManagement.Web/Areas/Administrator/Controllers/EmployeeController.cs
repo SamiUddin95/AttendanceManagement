@@ -283,7 +283,7 @@ public class EmployeeController : Controller
     private async Task PopulateLookupsAsync(EmployeeViewModel viewModel)
     {
         var companyId = viewModel.CompanyId;
-        var departments = await _context.Departments.Where(d => d.IsActive && d.CompanyId == companyId).OrderBy(d => d.Name).ToListAsync();
+        var departments = await _context.Departments.Where(d => d.IsActive && (d.CompanyId == companyId || d.CompanyId == null)).OrderBy(d => d.Name).ToListAsync();
         var categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
         var designations = await _context.Designations.Where(d => d.IsActive).OrderBy(d => d.Name).ToListAsync();
         var shifts = await _context.Shifts.Where(s => s.IsActive && s.CompanyId == companyId).OrderBy(s => s.Name).ToListAsync();

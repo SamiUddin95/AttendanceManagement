@@ -263,7 +263,7 @@ public class AssignRoleController : Controller
     public async Task<IActionResult> GetDepartmentsByCompany(Guid companyId)
     {
         var departments = await _context.Departments
-            .Where(d => d.CompanyId == companyId || d.CompanyId == Guid.Empty)
+            .Where(d => d.CompanyId == companyId || d.CompanyId == null)
             .OrderBy(d => d.Name)
             .Select(d => new { id = d.Id, name = d.Name })
             .ToListAsync();
@@ -321,7 +321,7 @@ public class AssignRoleController : Controller
                 .ToListAsync();
 
             var departments = await _context.Departments
-                .Where(d => d.CompanyId == viewModel.CompanyId && d.IsActive)
+                .Where(d => (d.CompanyId == viewModel.CompanyId || d.CompanyId == null) && d.IsActive)
                 .OrderBy(d => d.Name)
                 .ToListAsync();
 
