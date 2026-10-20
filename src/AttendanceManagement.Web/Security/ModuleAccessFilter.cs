@@ -46,7 +46,7 @@ public sealed class ModuleAccessFilter(AttendanceDbContext db) : IAsyncActionFil
         if (controller == "Company") { context.Result = new ForbidResult(); return; }
         var action = context.RouteData.Values["action"]?.ToString() ?? "";
         if (controller == "Dashboard" && action == "Index")
-        { context.Result = new RedirectToActionResult("ViewCalendar", "GenEmployee", new { area = "Administrator" }); return; }
+        { context.Result = new RedirectToActionResult("Index", "InOutTimings", new { area = "Administrator" }); return; }
         if (controller is "GenEmployee" or "LeaveHistory" or "InOutTimings") { await next(); return; }
         if (controller == "GenIncharge")
         {

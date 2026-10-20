@@ -184,7 +184,7 @@ public class AuthController : Controller
             return Redirect(returnUrl);
         }
 
-        return RedirectToAction("Index", "Dashboard", new { area = "Administrator" });
+        return RedirectToAction("Index", "InOutTimings", new { area = "Administrator" });
     }
 
     [Authorize]
