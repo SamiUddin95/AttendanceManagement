@@ -115,10 +115,13 @@
         <!-- Main Content -->
         <main class="admin-main">
             <div class="container-fluid">
-                <div class="page-header mb-4">
-                    <h1 class="h4 mb-0">@ViewData["Title"]</h1>
-                    <small class="text-muted">Super User Administration</small>
-                </div>
+                @if (ViewData["HidePageHeader"] as bool? != true)
+                {
+                    <div class="page-header mb-4">
+                        <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                        <small class="text-muted">Super User Administration</small>
+                    </div>
+                }
                 <section class="admin-content">
                     @RenderBody()
                 </section>

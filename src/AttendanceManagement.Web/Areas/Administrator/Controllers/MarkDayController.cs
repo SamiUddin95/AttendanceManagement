@@ -28,7 +28,7 @@ public class MarkDayController : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             var searchLower = search.ToLower();
-            query = query.Where(md => md.Group.Name.ToLower().Contains(searchLower) ||
+            query = query.Where(md => md.Group!.Name.ToLower().Contains(searchLower) ||
                                      md.Group.Code.ToLower().Contains(searchLower));
         }
 
@@ -71,6 +71,12 @@ public class MarkDayController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(MarkDayViewModel viewModel)
     {
+        if (viewModel.ToDate.Date < viewModel.FromDate.Date)
+            ModelState.AddModelError("ToDate", "End date must be on or after start date.");
+        if (new[] { viewModel.IsOn, viewModel.IsOff, viewModel.IsGazettedHoliday, viewModel.IsProvincialHoliday, viewModel.IsStrike, viewModel.IsEid }.Count(v => v) != 1)
+            ModelState.AddModelError("IsOn", "Select exactly one day status.");
+        if (!await _context.Groups.AnyAsync(g => g.Id == viewModel.GroupId && g.CompanyId == viewModel.CompanyId))
+            ModelState.AddModelError("GroupId", "Select a group from this company.");
         if (!ModelState.IsValid)
         {
             await PopulateDropdownsAsync(viewModel);
@@ -153,6 +159,12 @@ public class MarkDayController : Controller
             return NotFound();
         }
 
+        if (viewModel.ToDate.Date < viewModel.FromDate.Date)
+            ModelState.AddModelError("ToDate", "End date must be on or after start date.");
+        if (new[] { viewModel.IsOn, viewModel.IsOff, viewModel.IsGazettedHoliday, viewModel.IsProvincialHoliday, viewModel.IsStrike, viewModel.IsEid }.Count(v => v) != 1)
+            ModelState.AddModelError("IsOn", "Select exactly one day status.");
+        if (!await _context.Groups.AnyAsync(g => g.Id == viewModel.GroupId && g.CompanyId == viewModel.CompanyId))
+            ModelState.AddModelError("GroupId", "Select a group from this company.");
         if (!ModelState.IsValid)
         {
             await PopulateDropdownsAsync(viewModel);

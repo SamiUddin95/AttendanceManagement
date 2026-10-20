@@ -14,9 +14,9 @@ public interface ILookupBoardService
     Task<LookupEntryDto> AddDesignationAsync(string name, bool isIncharge = false);
     Task<LookupEntryDto> AddDepartmentAsync(string name);
 
-    Task<LookupEntryDto> UpdateCategoryAsync(int id, string name);
-    Task<LookupEntryDto> UpdateDesignationAsync(int id, string name, bool? isIncharge = null);
-    Task<LookupEntryDto> UpdateDepartmentAsync(int id, string name);
+    Task<LookupEntryDto?> UpdateCategoryAsync(int id, string name);
+    Task<LookupEntryDto?> UpdateDesignationAsync(int id, string name, bool? isIncharge = null);
+    Task<LookupEntryDto?> UpdateDepartmentAsync(int id, string name);
 
     Task<bool> DeleteCategoryAsync(int id);
     Task<bool> DeleteDesignationAsync(int id);

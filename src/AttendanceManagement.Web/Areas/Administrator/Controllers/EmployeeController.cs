@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using AttendanceManagement.Web.Services;
 
 namespace AttendanceManagement.Web.Areas.Administrator.Controllers;
 
@@ -61,6 +62,69 @@ public class EmployeeController : Controller
         return View(viewModels);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> AssignTeam(int? inchargeId)
+    {
+        var model = new AssignTeamViewModel { InchargeId = inchargeId };
+        await PopulateTeamAsync(model);
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AssignTeam(AssignTeamViewModel model)
+    {
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable) : null;
+        var incharge = await _context.Employees.FirstOrDefaultAsync(e => e.Id == model.InchargeId && e.IsActive && e.Company!.IsActive);
+        var ids = (model.EmployeeIds ?? []).Distinct().ToList();
+        if (incharge == null) ModelState.AddModelError("InchargeId", "Select an active incharge.");
+        if (ids.Count == 0 || ids.Count > 1000) ModelState.AddModelError("EmployeeIds", "Select between 1 and 1,000 employees.");
+        if (incharge != null && ModelState.IsValid)
+        {
+            var companyEmployees = await _context.Employees.Where(e => e.CompanyId == incharge.CompanyId).ToListAsync();
+            var selected = companyEmployees.Where(e => ids.Contains(e.Id) && e.IsActive && e.Id != incharge.Id).ToList();
+            if (selected.Count != ids.Count)
+                ModelState.AddModelError("EmployeeIds", "Select active employees from the incharge's company, excluding the incharge.");
+            if (!model.AllowReassignment && selected.Any(e => e.InchargeEmployeeId.HasValue && e.InchargeEmployeeId != incharge.Id))
+                ModelState.AddModelError("AllowReassignment", "Confirm reassignment to move employees from another incharge.");
+            var hierarchy = companyEmployees.ToDictionary(e => e.Id, e => e.InchargeEmployeeId);
+            foreach (var employee in selected) hierarchy[employee.Id] = incharge.Id;
+            if (selected.Any(e => TeamHierarchy.HasCycle(e.Id, hierarchy)))
+                ModelState.AddModelError("EmployeeIds", "This would create a circular reporting relationship. Correct the incharge's own Reports to assignment first.");
+            if (ModelState.IsValid)
+            {
+                foreach (var employee in selected)
+                {
+                    employee.InchargeEmployeeId = incharge.Id;
+                    employee.InchargeCategoryId = incharge.CategoryId;
+                    employee.InchargeDesignationId = incharge.DesignationId;
+                }
+                await _context.SaveChangesAsync();
+                if (transaction != null) await transaction.CommitAsync();
+                TempData["SuccessMessage"] = $"{selected.Count} employee(s) assigned to {incharge.Name} ({incharge.EmployeeNo}).";
+                return RedirectToAction(nameof(AssignTeam), new { inchargeId = incharge.Id });
+            }
+        }
+        if (transaction != null) await transaction.RollbackAsync();
+        await PopulateTeamAsync(model);
+        return View(model);
+    }
+
+    private async Task PopulateTeamAsync(AssignTeamViewModel model)
+    {
+        var employees = await _context.Employees.AsNoTracking().Include(e => e.InchargeEmployee)
+            .Where(e => e.Company!.IsActive).OrderBy(e => e.Name).ToListAsync();
+        model.Incharges = employees.Where(e => e.IsActive).Select(e => new SelectListItem($"{e.Name} ({e.EmployeeNo})", e.Id.ToString())).ToList();
+        var incharge = employees.FirstOrDefault(e => e.Id == model.InchargeId && e.IsActive);
+        if (incharge == null) return;
+        model.ReportsTo = incharge.InchargeEmployee == null ? null : $"{incharge.InchargeEmployee.Name} ({incharge.InchargeEmployee.EmployeeNo})";
+        model.Candidates = employees.Where(e => e.CompanyId == incharge.CompanyId && e.Id != incharge.Id)
+            .Select(e => new TeamCandidate(e.Id, e.Name, e.EmployeeNo,
+                e.InchargeEmployee == null ? null : $"{e.InchargeEmployee.Name} ({e.InchargeEmployee.EmployeeNo})",
+                e.InchargeEmployeeId == incharge.Id, e.IsActive)).ToList();
+    }
+
     public async Task<IActionResult> Create()
     {
         // Get current user's company - for now, we'll use the first company as default
@@ -86,6 +150,7 @@ public class EmployeeController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(EmployeeViewModel viewModel)
     {
+        await ValidateEmployeeAsync(viewModel);
         if (!ModelState.IsValid)
         {
             await PopulateLookupsAsync(viewModel);
@@ -189,7 +254,7 @@ public class EmployeeController : Controller
             Phone = employee.Phone,
             Cell = employee.Cell,
             Email = employee.Email,
-            Password = employee.Password,
+            Password = null,
             Gender = employee.Gender,
             DateOfBirth = employee.DateOfBirth,
             CNIC = employee.CNIC,
@@ -212,6 +277,7 @@ public class EmployeeController : Controller
             return NotFound();
         }
 
+        await ValidateEmployeeAsync(viewModel);
         if (!ModelState.IsValid)
         {
             await PopulateLookupsAsync(viewModel);
@@ -280,6 +346,28 @@ public class EmployeeController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    private async Task ValidateEmployeeAsync(EmployeeViewModel model)
+    {
+        if (await _context.Employees.AnyAsync(e => e.EmployeeNo == model.EmployeeNo && e.Id != model.Id))
+            ModelState.AddModelError(nameof(model.EmployeeNo), "Employee number is already in use.");
+        if (!await _context.Companies.AnyAsync(c => c.Id == model.CompanyId && c.IsActive))
+            ModelState.AddModelError(nameof(model.CompanyId), "Select an active company.");
+        if (model.InchargeEmployeeId.HasValue && (model.InchargeEmployeeId == model.Id || !await _context.Employees.AnyAsync(e => e.Id == model.InchargeEmployeeId && e.CompanyId == model.CompanyId && e.IsActive)))
+            ModelState.AddModelError(nameof(model.InchargeEmployeeId), "Select another active employee from the same company.");
+        if (model.ShiftId.HasValue && !await _context.Shifts.AnyAsync(s => s.Id == model.ShiftId && s.CompanyId == model.CompanyId))
+            ModelState.AddModelError(nameof(model.ShiftId), "Select a shift from the employee's company.");
+        if (model.InchargeEmployeeId.HasValue)
+        {
+            var hierarchy = await _context.Employees.Where(e => e.CompanyId == model.CompanyId).ToDictionaryAsync(e => e.Id, e => e.InchargeEmployeeId);
+            hierarchy[model.Id] = model.InchargeEmployeeId;
+            if (TeamHierarchy.HasCycle(model.Id, hierarchy))
+                ModelState.AddModelError(nameof(model.InchargeEmployeeId), "This assignment creates a circular reporting relationship. Choose another incharge.");
+        }
+        if (model.LeaveId.HasValue && !await _context.Leaves.AnyAsync(s => s.Id == model.LeaveId && s.CompanyId == model.CompanyId))
+            ModelState.AddModelError(nameof(model.LeaveId), "Select leave from the employee's company.");
+        if (model.DepartmentId.HasValue && !await _context.Departments.AnyAsync(s => s.Id == model.DepartmentId && (s.CompanyId == null || s.CompanyId == model.CompanyId)))
+            ModelState.AddModelError(nameof(model.DepartmentId), "Select a department from the employee's company.");
+    }
     private async Task PopulateLookupsAsync(EmployeeViewModel viewModel)
     {
         var companyId = viewModel.CompanyId;
@@ -297,7 +385,7 @@ public class EmployeeController : Controller
         viewModel.Leaves = leaves.Select(l => new SelectListItem(l.Name, l.Id.ToString(), l.Id == viewModel.LeaveId)).ToList();
         viewModel.InchargeCategories = categories.Select(c => new SelectListItem(c.Name, c.Id.ToString(), c.Id == viewModel.InchargeCategoryId)).ToList();
         viewModel.InchargeDesignations = designations.Select(d => new SelectListItem(d.Name, d.Id.ToString(), d.Id == viewModel.InchargeDesignationId)).ToList();
-        viewModel.InchargeEmployees = employees.Select(e => new SelectListItem(e.Name, e.Id.ToString(), e.Id == viewModel.InchargeEmployeeId)).ToList();
+        viewModel.InchargeEmployees = employees.Where(e => e.Id != viewModel.Id).Select(e => new SelectListItem($"{e.Name} ({e.EmployeeNo})", e.Id.ToString(), e.Id == viewModel.InchargeEmployeeId)).ToList();
 
         // Employee types
         var employeeTypes = new[] { "Permanent", "Contract", "Part-Time", "Temporary/Seasonal", "Intern" };

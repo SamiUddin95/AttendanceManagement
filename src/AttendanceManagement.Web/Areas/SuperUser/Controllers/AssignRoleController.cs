@@ -27,9 +27,9 @@ public class AssignRoleController : Controller
             .Include(ra => ra.Group)
             .Include(ra => ra.Department)
             .Include(ra => ra.Employee)
-            .OrderBy(ra => ra.Company.Name)
+            .OrderBy(ra => ra.Company != null ? ra.Company.Name : "")
             .ThenBy(ra => ra.AssignmentType)
-            .ThenBy(ra => ra.Role.Name)
+            .ThenBy(ra => ra.Role != null ? ra.Role.Name : "")
             .ToListAsync();
 
         var viewModel = new AssignRoleListViewModel

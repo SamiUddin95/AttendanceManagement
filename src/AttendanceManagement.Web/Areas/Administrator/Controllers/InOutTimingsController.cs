@@ -1,3 +1,4 @@
+using AttendanceManagement.Web.Security;
 using AttendanceManagement.Domain.Entities;
 using AttendanceManagement.Infrastructure.Data;
 using AttendanceManagement.Web.ViewModels.InOutTimings;
@@ -95,7 +96,7 @@ public class InOutTimingsController : Controller
 
         var employee = await _context.Employees
             .Include(e => e.Company)
-            .FirstOrDefaultAsync(e => e.EmployeeNo == userName || e.Email == userName);
+            .ForUser(User).FirstOrDefaultAsync();
 
         return employee;
     }
@@ -135,8 +136,8 @@ public class InOutTimingsController : Controller
         // Get attendance records for the employee in the selected month
         var attendances = await _context.Attendances
             .Where(a => a.EmployeeId == employee.Id &&
-                        a.PunchDateTime >= startDate &&
-                        a.PunchDateTime <= endDate)
+                        a.PunchDateTime >= startDate.AddDays(-1) &&
+                        a.PunchDateTime < endDate.Date.AddDays(2))
             .OrderBy(a => a.PunchDateTime)
             .ToListAsync();
 
@@ -158,78 +159,6 @@ public class InOutTimingsController : Controller
         };
     }
 
-    private List<InOutTimingsItem> ProcessAttendances(
-        List<Attendance> attendances,
-        DateTime startDate,
-        DateTime endDate,
-        bool isPayrollWise)
-    {
-        var items = new List<InOutTimingsItem>();
-        var srNo = 1;
-
-        // Group attendances by date
-        var groupedByDate = attendances
-            .GroupBy(a => a.PunchDateTime.Date)
-            .OrderBy(g => g.Key)
-            .ToList();
-
-        foreach (var group in groupedByDate)
-        {
-            var dateAttendances = group.OrderBy(a => a.PunchDateTime).ToList();
-            var timeIn = dateAttendances.FirstOrDefault(a => a.PunchType == "In")?.PunchDateTime.TimeOfDay;
-            var timeOut = dateAttendances.LastOrDefault(a => a.PunchType == "Out")?.PunchDateTime.TimeOfDay;
-
-            // Calculate extra hours if both In and Out exist
-            TimeSpan? extraHours = null;
-            if (timeIn.HasValue && timeOut.HasValue)
-            {
-                var totalHours = timeOut.Value - timeIn.Value;
-                // Assuming standard 8 hours work day
-                var standardHours = TimeSpan.FromHours(8);
-                if (totalHours > standardHours)
-                {
-                    extraHours = totalHours - standardHours;
-                }
-            }
-
-            var status = DetermineStatus(timeIn, timeOut);
-
-            items.Add(new InOutTimingsItem
-            {
-                SrNo = srNo++,
-                Date = group.Key,
-                TimeIn = timeIn,
-                TimeOut = timeOut,
-                ExtraHours = extraHours,
-                Status = status
-            });
-        }
-
-        // If payroll wise, we might need to group by payroll period (e.g., 1-15, 16-end of month)
-        if (isPayrollWise)
-        {
-            // For payroll wise, we can add a header row or group indicator
-            // This is a simplified version - in real payroll systems, you'd have payroll periods defined
-        }
-
-        return items;
-    }
-
-    private string DetermineStatus(TimeSpan? timeIn, TimeSpan? timeOut)
-    {
-        if (!timeIn.HasValue && !timeOut.HasValue)
-            return "Absent";
-
-        if (timeIn.HasValue && !timeOut.HasValue)
-            return "Half Day (No Out)";
-
-        if (!timeIn.HasValue && timeOut.HasValue)
-            return "Half Day (No In)";
-
-        var totalHours = timeOut.Value - timeIn.Value;
-        if (totalHours < TimeSpan.FromHours(4))
-            return "Half Day";
-
-        return "Present";
-    }
+    private List<InOutTimingsItem> ProcessAttendances(List<Attendance> attendances, DateTime startDate, DateTime endDate, bool isPayrollWise)
+        => AttendanceManagement.Web.Services.PunchPairing.Build(attendances).Where(r => r.Date >= startDate.Date && r.Date <= endDate.Date).ToList();
 }

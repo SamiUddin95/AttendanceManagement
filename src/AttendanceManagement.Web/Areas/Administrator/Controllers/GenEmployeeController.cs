@@ -1,3 +1,4 @@
+using AttendanceManagement.Web.Security;
 using AttendanceManagement.Domain.Entities;
 using AttendanceManagement.Infrastructure.Data;
 using AttendanceManagement.Web.ViewModels.LeavePolicy;
@@ -153,7 +154,7 @@ public class GenEmployeeController : Controller
             return View(viewModel);
         }
 
-        if (string.IsNullOrWhiteSpace(employee.Password) || !BCrypt.Net.BCrypt.Verify(viewModel.CurrentPassword, employee.Password))
+        if (string.IsNullOrWhiteSpace(employee.Password) || !EmployeePassword.Verify(viewModel.CurrentPassword, employee.Password))
         {
             ModelState.AddModelError("CurrentPassword", "Current password is incorrect.");
             return View(viewModel);
@@ -197,6 +198,7 @@ public class GenEmployeeController : Controller
         }
 
         // Re-populate leave types and balances for validation
+        await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
         var fullViewModel = await BuildApplyLeaveViewModelAsync(employee);
         viewModel.LeaveTypes = fullViewModel.LeaveTypes;
         viewModel.LeaveBalances = fullViewModel.LeaveBalances;
@@ -225,15 +227,25 @@ public class GenEmployeeController : Controller
 
         // Validate leave balance
         var selectedBalance = fullViewModel.LeaveBalances.FirstOrDefault(b => b.LeaveType == viewModel.SelectedLeaveType);
-        if (selectedBalance != null && viewModel.TotalDays > selectedBalance.RemainingDays)
+        if (selectedBalance == null)
+        {
+            ModelState.AddModelError("SelectedLeaveType", "Select a leave type assigned to your policy.");
+            return View(viewModel);
+        }
+        if (await _context.LeaveApplications.AnyAsync(la => la.EmployeeId == employee.Id &&
+            (la.Status == "Pending" || la.Status == "Approved") && la.StartDate <= viewModel.ToDate && la.EndDate >= viewModel.FromDate))
+        {
+            ModelState.AddModelError("FromDate", "These dates overlap an existing pending or approved leave.");
+            return View(viewModel);
+        }
+        if (viewModel.TotalDays > selectedBalance.RemainingDays)
         {
             ModelState.AddModelError("FromDate", $"Insufficient {viewModel.SelectedLeaveType} balance. You have {selectedBalance.RemainingDays} days remaining.");
             return View(viewModel);
         }
 
         // Generate leave number
-        var leaveCount = await _context.LeaveApplications.CountAsync(la => la.EmployeeId == employee.Id);
-        var leaveNumber = $"LV-{employee.EmployeeNo}-{DateTime.Now:yyyyMMdd}-{leaveCount + 1:D3}";
+        var leaveNumber = $"LV-{Guid.NewGuid():N}";
 
         // Create leave application
         var leaveApplication = new LeaveApplication
@@ -246,12 +258,15 @@ public class GenEmployeeController : Controller
             TotalDays = viewModel.TotalDays,
             Reason = viewModel.Reason,
             Status = "Pending",
+            InchargeId = employee.InchargeEmployeeId,
+            InchargeApprovalStatus = "Pending",
             LeaveNumber = leaveNumber,
             CreatedAtUtc = DateTime.UtcNow
         };
 
         _context.LeaveApplications.Add(leaveApplication);
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         TempData["SuccessMessage"] = $"Leave application submitted successfully. Leave Number: {leaveNumber}";
         return RedirectToAction(nameof(ApplyForLeave));
@@ -261,7 +276,7 @@ public class GenEmployeeController : Controller
     {
         var leave = employee.Leave;
         var leaveApplications = await _context.LeaveApplications
-            .Where(la => la.EmployeeId == employee.Id && la.Status == "Approved")
+            .Where(la => la.EmployeeId == employee.Id && (la.Status == "Approved" || la.Status == "Pending"))
             .ToListAsync();
 
         var balances = new List<ApplyLeaveBalanceItem>();
@@ -322,10 +337,10 @@ public class GenEmployeeController : Controller
 
         var employee = await _context.Employees
             .Include(e => e.Leave)
-                .ThenInclude(l => l.LeaveDetails)
+                .ThenInclude(l => l!.LeaveDetails)
             .Include(e => e.Leave)
-                .ThenInclude(l => l.LeavePolicy)
-            .FirstOrDefaultAsync(e => e.EmployeeNo == userName || e.Email == userName);
+                .ThenInclude(l => l!.LeavePolicy)
+            .ForUser(User).FirstOrDefaultAsync();
 
         return employee;
     }
@@ -428,9 +443,10 @@ public class GenEmployeeController : Controller
             }
         }
 
+        var groupIds = _context.GroupEmployees.Where(g => g.EmployeeId == employee.Id && g.IsActive).Select(g => g.GroupId);
         // Get MarkDays (holidays) for this month
         var markDays = await _context.MarkDays
-            .Where(md => md.CompanyId == employee.CompanyId &&
+            .Where(md => md.CompanyId == employee.CompanyId && groupIds.Contains(md.GroupId) &&
                          md.FromDate <= endDate &&
                          md.ToDate >= startDate)
             .ToListAsync();
@@ -461,10 +477,16 @@ public class GenEmployeeController : Controller
             }
         }
 
+        var overrides = await _context.EmployeeCalendarDays.Where(d => d.EmployeeId == employee.Id && d.Date >= startDate && d.Date <= endDate).ToListAsync();
+        foreach (var day in overrides)
+        {
+            events.RemoveAll(e => e.Date.Date == day.Date.Date && e.Type == "Holiday");
+            events.Add(new CalendarEvent { Date = day.Date, Title = day.DayStatus, Type = "Holiday", Color = "#198754", Description = "Calendar updated by supervisor" });
+        }
         // Add employee birthday if in this month
         if (employee.DateOfBirth.HasValue && employee.DateOfBirth.Value.Month == month)
         {
-            var birthday = new DateTime(year, month, employee.DateOfBirth.Value.Day);
+            var birthday = new DateTime(year, month, Math.Min(employee.DateOfBirth.Value.Day, DateTime.DaysInMonth(year, month)));
             if (birthday >= startDate && birthday <= endDate)
             {
                 events.Add(new CalendarEvent

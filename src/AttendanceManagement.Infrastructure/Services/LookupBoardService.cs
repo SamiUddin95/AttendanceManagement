@@ -78,7 +78,7 @@ internal class LookupBoardService : ILookupBoardService
         return new LookupEntryDto(department.Id, department.Name, department.IsActive);
     }
 
-    public async Task<LookupEntryDto> UpdateCategoryAsync(int id, string name)
+    public async Task<LookupEntryDto?> UpdateCategoryAsync(int id, string name)
     {
         var category = await _dbContext.Categories.FindAsync(id);
         if (category == null) return null;
@@ -87,7 +87,7 @@ internal class LookupBoardService : ILookupBoardService
         return new LookupEntryDto(category.Id, category.Name, category.IsActive);
     }
 
-    public async Task<LookupEntryDto> UpdateDesignationAsync(int id, string name, bool? isIncharge = null)
+    public async Task<LookupEntryDto?> UpdateDesignationAsync(int id, string name, bool? isIncharge = null)
     {
         var designation = await _dbContext.Designations.FindAsync(id);
         if (designation == null) return null;
@@ -98,7 +98,7 @@ internal class LookupBoardService : ILookupBoardService
         return new LookupEntryDto(designation.Id, designation.Name, designation.IsActive, designation.IsIncharge);
     }
 
-    public async Task<LookupEntryDto> UpdateDepartmentAsync(int id, string name)
+    public async Task<LookupEntryDto?> UpdateDepartmentAsync(int id, string name)
     {
         var department = await _dbContext.Departments.FindAsync(id);
         if (department == null) return null;

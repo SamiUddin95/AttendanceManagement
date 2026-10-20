@@ -1,13 +1,18 @@
 @model AttendanceManagement.Web.ViewModels.Employees.EmployeeViewModel
 @{
     ViewData["Title"] = Model.Id > 0 ? "Edit Employee" : "Create Employee";
+    ViewData["HidePageHeader"] = true;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-@*     <div>
+    @if (Model.Id > 0)
+    {
+        <a asp-action="AssignTeam" asp-route-inchargeId="@Model.Id" class="btn btn-outline-primary">Assign team members to @Model.Name (@Model.EmployeeNo)</a>
+    }
+    <div>
         <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit Employee" : "Create Employee")</h2>
         <small class="text-muted">Manage employee information and details</small>
-    </div> *@
+    </div>
     <a asp-action="Index" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-2"></i>Back to List
     </a>
@@ -15,6 +20,7 @@
 
 <form asp-action="@(Model.Id > 0 ? "Edit" : "Create")" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
     @if (Model.Id > 0)
     {
         <input type="hidden" asp-for="Id" />
@@ -245,11 +251,12 @@
                         <span asp-validation-for="InchargeDesignationId" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="InchargeEmployeeId" class="form-label fw-semibold">Employee</label>
+                        <label asp-for="InchargeEmployeeId" class="form-label fw-semibold">Reports to (this employee's incharge)</label>
                         <select asp-for="InchargeEmployeeId" asp-items="Model.InchargeEmployees" class="form-select">
                             <option value="">-- Select Employee --</option>
                         </select>
                         <span asp-validation-for="InchargeEmployeeId" class="text-danger"></span>
+                        <small class="text-muted d-block">The selected person supervises this employee. Use Assign Team Members to choose employees supervised by this person.</small>
                     </div>
                 </div>
             </div>

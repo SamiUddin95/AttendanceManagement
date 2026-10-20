@@ -7,6 +7,7 @@
                   : isMyself ? "My Calendar"
                   : "Team Calendar";
     ViewData["Title"] = pageTitle;
+    ViewData["HidePageHeader"] = true;
 
     var monthName = Model.CurrentMonth switch
     {

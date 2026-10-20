@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using AttendanceManagement.Infrastructure.Data;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
@@ -11,10 +13,12 @@ namespace AttendanceManagement.Web.ViewComponents;
 public class ModuleNavigationViewComponent : ViewComponent
 {
     private readonly IUserModuleService _userModuleService;
+    private readonly AttendanceDbContext _context;
 
-    public ModuleNavigationViewComponent(IUserModuleService userModuleService)
+    public ModuleNavigationViewComponent(IUserModuleService userModuleService, AttendanceDbContext context)
     {
         _userModuleService = userModuleService;
+        _context = context;
     }
 
     public async Task<IViewComponentResult> InvokeAsync(CancellationToken cancellationToken = default)
@@ -54,6 +58,13 @@ public class ModuleNavigationViewComponent : ViewComponent
         }
 
         var modules = await _userModuleService.GetUserModulesAsync(companyId, assignmentType, groupId, departmentId, employeeId, cancellationToken);
-        return View(modules);
+                var visible = modules.Where(m => m.Name != "SuperUser").ToList();
+        var defaults = await _userModuleService.GetAllActiveModulesAsync(cancellationToken);
+        foreach (var module in defaults.Where(m => m.Name == "GenEmployee" || m.Name == "GenIncharge"))
+        {
+            if (module.Name == "GenIncharge" && !await _context.Employees.AnyAsync(e => e.InchargeEmployeeId == employeeId && e.CompanyId == companyId && e.IsActive, cancellationToken)) continue;
+            if (visible.All(m => m.Id != module.Id)) visible.Add(module);
+        }
+        return View(visible);
     }
 }

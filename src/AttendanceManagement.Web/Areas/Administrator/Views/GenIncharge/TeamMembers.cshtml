@@ -1,6 +1,7 @@
 @model AttendanceManagement.Web.ViewModels.GenIncharge.TeamMembersViewModel
 @{
     ViewData["Title"] = "Team Members";
+    ViewData["HidePageHeader"] = true;
     var activeCount = Model.Members.Count(m => m.IsActive);
     var inactiveCount = Model.Members.Count(m => !m.IsActive);
 }

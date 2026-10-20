@@ -107,7 +107,7 @@
                     <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
                          style="width:52px;height:52px;">
                         <span class="fw-bold text-primary fs-5">
-                            @Model.SelectedEmployeeName![..Math.Min(2, Model.SelectedEmployeeName.Length)].ToUpper()
+                            @(new string((Model.SelectedEmployeeName ?? "").Take(2).ToArray()).ToUpperInvariant())
                         </span>
                     </div>
                 </div>

@@ -15,6 +15,8 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
                                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
 
+        if (string.IsNullOrWhiteSpace(connectionString)) throw new InvalidOperationException("Configure ConnectionStrings__DefaultConnection before starting the application.");
+
         services.AddDbContext<AttendanceDbContext>(options =>
             options.UseSqlServer(connectionString));
 

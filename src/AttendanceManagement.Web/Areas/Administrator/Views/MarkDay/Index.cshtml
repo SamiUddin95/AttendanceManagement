@@ -1,13 +1,14 @@
 @model AttendanceManagement.Web.ViewModels.MarkDays.MarkDayListViewModel
 @{
     ViewData["Title"] = "Mark Days";
+    ViewData["HidePageHeader"] = true;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-   @*  <div>
+    <div>
         <h2 class="h4 mb-1">Mark Days</h2>
         <small class="text-muted">Mark days with specific status for employee groups</small>
-    </div> *@
+    </div>
     <a asp-action="Create" class="btn btn-primary">
         <i class="bi bi-plus-lg me-2"></i>New Mark Day
     </a>

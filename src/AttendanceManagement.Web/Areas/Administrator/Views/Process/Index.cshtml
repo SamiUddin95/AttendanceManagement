@@ -1,0 +1,14 @@
+@{ ViewData["Title"] = "Import Device Attendance"; }
+<div class="card p-4">
+    <p>Import attendance exported from your device software. Use hospital local time and an explicit In or Out direction for each punch.</p>
+    <p>Required CSV columns: <code>EmployeeNo,PunchDateTime,PunchType,DeviceId</code></p>
+    <p>Example: <code>DEMO-001,2026-10-01 08:00:00,In,DEMO</code></p>
+    <p>Maximum 1 MB and 10,000 punches per import. Unknown employees or invalid rows reject the entire file. Reimported punches are skipped.</p>
+    @if (TempData["SuccessMessage"] is string message) { <div class="alert alert-success">@message</div> }
+    <form asp-action="Import" method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="All" class="text-danger"></div>
+        <label for="file" class="form-label">Attendance CSV file</label>
+        <input id="file" name="file" type="file" accept=".csv" class="form-control" required />
+        <button class="btn btn-primary mt-3" type="submit">Import punches</button>
+    </form>
+</div>

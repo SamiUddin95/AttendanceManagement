@@ -36,6 +36,11 @@ internal class AuthService : IAuthService
         }
 
         await LoadNavigationAsync(company, cancellationToken);
+        if (!company.AdminPasswordHash.StartsWith("PBKDF2$", StringComparison.Ordinal))
+        {
+            company.AdminPasswordHash = PasswordHasher.Hash(request.Password);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
         return company.ToDto();
     }
 

@@ -1,3 +1,4 @@
+using AttendanceManagement.Web.Security;
 using AttendanceManagement.Domain.Entities;
 using AttendanceManagement.Infrastructure.Data;
 using AttendanceManagement.Web.ViewModels.LeaveHistory;
@@ -42,7 +43,7 @@ public class LeaveHistoryController : Controller
         // Try to match by EmployeeNo first, then by Email
         var employee = await _context.Employees
             .Include(e => e.Company)
-            .FirstOrDefaultAsync(e => e.EmployeeNo == userName || e.Email == userName);
+            .ForUser(User).FirstOrDefaultAsync();
 
         return employee;
     }

@@ -99,6 +99,8 @@ public class LeaveCancellationController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel(int id, string cancellationReason)
     {
+        if (string.IsNullOrWhiteSpace(cancellationReason) || cancellationReason.Length > 500)
+            return BadRequest("A cancellation reason of up to 500 characters is required.");
         var leaveApplication = await _context.LeaveApplications.FindAsync(id);
         if (leaveApplication is null)
         {
@@ -121,7 +123,7 @@ public class LeaveCancellationController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        if (leaveApplication.InchargeApprovalStatus != "Approved")
+        if (leaveApplication.InchargeApprovalStatus != "Approved" || leaveApplication.Status != "Approved")
         {
             TempData["ErrorMessage"] = "Only leaves approved by Incharge can be cancelled.";
             return RedirectToAction(nameof(Index));

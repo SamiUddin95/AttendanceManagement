@@ -33,7 +33,7 @@ public class AssignGroupController : Controller
         if (!string.IsNullOrWhiteSpace(search))
         {
             var searchLower = search.ToLower();
-            query = query.Where(ag => ag.Group.Name.ToLower().Contains(searchLower) ||
+            query = query.Where(ag => ag.Group!.Name.ToLower().Contains(searchLower) ||
                                      ag.Group.Code.ToLower().Contains(searchLower));
         }
 

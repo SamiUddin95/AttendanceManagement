@@ -4,12 +4,72 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
     var returnUrl = Model.ReturnUrl ?? ViewData["ReturnUrl"] as string;
     var showCompanySetup = !Model.HasAnyCompany;
+    var adminActive = !string.IsNullOrWhiteSpace(Model.Login.ErrorMessage)
+        || ViewData.ModelState.Any(e => e.Key.StartsWith("Login.") && e.Value?.Errors.Count > 0);
+
+    void PasswordToggle()
+    {
+        <button type="button" class="password-toggle" data-password-toggle aria-label="Show password" title="Show password">
+            <svg class="icon-show" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="icon-hide" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-6.4 0-10-7-10-7a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.4 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+        </button>
+    }
 }
 
-<section class="login-hero py-5" style="background: linear-gradient(135deg, #0f172a, #1d4ed8); min-height: 100vh;">
+@section Styles {
+    <style>
+        .auth-wrap {
+            background: radial-gradient(circle at 15% 20%, rgba(59,130,246,.18), transparent 45%),
+                        radial-gradient(circle at 85% 80%, rgba(99,102,241,.15), transparent 45%),
+                        #f1f5f9;
+            flex: 1 0 auto;
+        }
+        body { margin-bottom: 0; }
+        main { display: flex; flex-direction: column; }
+        .password-field { position: relative; }
+        .password-field .form-control { padding-right: 3rem; }
+        .password-toggle {
+            position: absolute; top: 50%; right: .5rem; transform: translateY(-50%);
+            border: 0; background: transparent; color: #64748b; padding: .35rem; line-height: 0; border-radius: .4rem;
+        }
+        .password-toggle:hover, .password-toggle:focus-visible { color: #1d4ed8; background: #e2e8f0; }
+        .password-toggle .icon-hide, .password-toggle.showing .icon-show { display: none; }
+        .password-toggle.showing .icon-hide { display: inline; }
+        .auth-card { border-radius: 1.25rem; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(15,23,42,.25); }
+        .auth-brand {
+            background: linear-gradient(150deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%);
+            color: #e2e8f0; position: relative;
+        }
+        .auth-brand::after {
+            content: ""; position: absolute; width: 320px; height: 320px; border-radius: 50%;
+            background: rgba(255,255,255,.06); right: -120px; bottom: -120px;
+        }
+        .auth-brand h1 { font-family: 'Space Grotesk', sans-serif; color: #fff; }
+        .auth-logo {
+            width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,.12);
+            display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;
+        }
+        .auth-feature { display: flex; gap: .75rem; align-items: flex-start; }
+        .auth-feature .dot {
+            flex: 0 0 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,.12);
+            display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; color: #93c5fd;
+        }
+        .auth-switch { background: #f1f5f9; border-radius: .75rem; padding: .3rem; display: flex; }
+        .auth-switch .nav-link {
+            flex: 1; border: 0; border-radius: .55rem; color: #475569; font-weight: 500; padding: .6rem 1rem;
+        }
+        .auth-switch .nav-link.active { background: #fff; color: #1d4ed8; box-shadow: 0 2px 8px rgba(15,23,42,.08); }
+        .auth-form .form-control { border-radius: .65rem; padding: .75rem 1rem; background: #f8fafc; }
+        .auth-form .form-control:focus { background: #fff; }
+        .auth-form .form-label { font-weight: 500; font-size: .9rem; color: #334155; }
+        .auth-form .btn-primary { border-radius: .65rem; padding: .75rem; font-weight: 600; }
+    </style>
+}
+
+<section class="auth-wrap d-flex align-items-center py-4">
     <div class="container">
-        <div class="row justify-content-center mb-4">
-            <div class="col-lg-10">
+        <div class="row justify-content-center">
+            <div class="col-xl-10">
                 @if (TempData["SuccessMessage"] is string success)
                 {
                     <div class="alert alert-success">@success</div>
@@ -18,75 +78,114 @@
                 {
                     <div class="alert alert-info">@info</div>
                 }
+
+                <div class="card auth-card border-0">
+                    <div class="row g-0">
+                        <div class="col-lg-5 auth-brand d-none d-lg-flex flex-column justify-content-center p-4 p-xl-5">
+                            <div class="position-relative" style="z-index:1">
+                                <span class="auth-logo mb-3">AMS</span>
+                                <h1 class="h3 fw-semibold mb-2">Attendance Management System</h1>
+                                <p class="text-white-50 mb-4">One secure portal for employees and administrators to manage attendance, leave and shifts.</p>
+                                <div class="d-grid gap-3">
+                                    <div class="auth-feature">
+                                        <span class="dot">&#10003;</span>
+                                        <div><div class="fw-semibold text-white">Real-time attendance</div><small class="text-white-50">Track in/out timings and daily presence.</small></div>
+                                    </div>
+                                    <div class="auth-feature">
+                                        <span class="dot">&#10003;</span>
+                                        <div><div class="fw-semibold text-white">Leave &amp; shift management</div><small class="text-white-50">Apply, approve and schedule with ease.</small></div>
+                                    </div>
+                                    <div class="auth-feature">
+                                        <span class="dot">&#10003;</span>
+                                        <div><div class="fw-semibold text-white">Role-based access</div><small class="text-white-50">Every user sees exactly what they need.</small></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-7 bg-white p-4 p-xl-5">
+                            <div class="mx-auto" style="max-width: 420px;">
+                                <h2 class="h3 fw-semibold mb-1">Welcome back</h2>
+                                <p class="text-muted mb-4">Sign in to continue to your workspace.</p>
+
+                                <ul class="nav auth-switch mb-4" role="tablist">
+                                    <li class="nav-item flex-fill" role="presentation">
+                                        <button class="nav-link w-100 @(adminActive ? "" : "active")" data-bs-toggle="tab" data-bs-target="#employee-pane" type="button" role="tab" aria-controls="employee-pane" aria-selected="@(!adminActive ? "true" : "false")">Employee</button>
+                                    </li>
+                                    <li class="nav-item flex-fill" role="presentation">
+                                        <button class="nav-link w-100 @(adminActive ? "active" : "")" data-bs-toggle="tab" data-bs-target="#admin-pane" type="button" role="tab" aria-controls="admin-pane" aria-selected="@(adminActive ? "true" : "false")">Administrator</button>
+                                    </li>
+                                </ul>
+
+                                <div class="tab-content">
+                                    <div class="tab-pane fade @(adminActive ? "" : "show active")" id="employee-pane" role="tabpanel">
+                                        <form asp-action="EmployeeLogin" method="post" class="auth-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                            <div class="mb-3">
+                                                <label asp-for="EmployeeLogin.EmployeeNo" class="form-label"></label>
+                                                <input asp-for="EmployeeLogin.EmployeeNo" class="form-control" placeholder="e.g. EMP-1024" autocomplete="username" />
+                                                <span asp-validation-for="EmployeeLogin.EmployeeNo" class="text-danger small"></span>
+                                            </div>
+                                            <div class="mb-4">
+                                                <label asp-for="EmployeeLogin.Password" class="form-label"></label>
+                                                <div class="password-field">
+                                                    <input asp-for="EmployeeLogin.Password" class="form-control" placeholder="Enter your password" autocomplete="current-password" />
+                                                    @{ PasswordToggle(); }
+                                                </div>
+                                                <span asp-validation-for="EmployeeLogin.Password" class="text-danger small"></span>
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(Model.EmployeeLogin.ErrorMessage))
+                                            {
+                                                <div class="alert alert-danger py-2">@Model.EmployeeLogin.ErrorMessage</div>
+                                            }
+                                            <button class="btn btn-primary w-100">Sign in</button>
+                                        </form>
+                                    </div>
+
+                                    <div class="tab-pane fade @(adminActive ? "show active" : "")" id="admin-pane" role="tabpanel">
+                                        <form asp-action="Login" method="post" class="auth-form">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                            <div class="mb-3">
+                                                <label asp-for="Login.CompanyIdentifier" class="form-label"></label>
+                                                <input asp-for="Login.CompanyIdentifier" class="form-control" placeholder="Company ID or domain" />
+                                                <span asp-validation-for="Login.CompanyIdentifier" class="text-danger small"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label asp-for="Login.AdminUserId" class="form-label"></label>
+                                                <input asp-for="Login.AdminUserId" class="form-control" placeholder="Admin username" autocomplete="username" />
+                                                <span asp-validation-for="Login.AdminUserId" class="text-danger small"></span>
+                                            </div>
+                                            <div class="mb-4">
+                                                <label asp-for="Login.Password" class="form-label"></label>
+                                                <div class="password-field">
+                                                    <input asp-for="Login.Password" class="form-control" placeholder="Enter your password" autocomplete="current-password" />
+                                                    @{ PasswordToggle(); }
+                                                </div>
+                                                <span asp-validation-for="Login.Password" class="text-danger small"></span>
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(Model.Login.ErrorMessage))
+                                            {
+                                                <div class="alert alert-danger py-2">@Model.Login.ErrorMessage</div>
+                                            }
+                                            <button class="btn btn-primary w-100">Sign in as Administrator</button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <p class="text-center text-muted small mt-4 mb-0">Having trouble signing in? Contact your system administrator.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="row gy-4 justify-content-center">
-            <div class="col-lg-4">
-                <div class="card shadow-lg border-0 rounded-4 p-4 h-100">
-                    <div class="text-center mb-4">
-                        <span class="badge bg-primary-subtle text-primary">Attendance Management</span>
-                        <h2 class="mt-2">Company Admin Access</h2>
-                        <p class="text-muted">Enter company credentials to access the administrator suite.</p>
-                    </div>
-                    <form asp-action="Login" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="returnUrl" value="@returnUrl" />
-                        <div class="mb-3">
-                            <label asp-for="Login.CompanyIdentifier" class="form-label"></label>
-                            <input asp-for="Login.CompanyIdentifier" class="form-control form-control-lg" placeholder="Company ID or Domain" />
-                            <span asp-validation-for="Login.CompanyIdentifier" class="text-danger"></span>
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="Login.AdminUserId" class="form-label"></label>
-                            <input asp-for="Login.AdminUserId" class="form-control form-control-lg" placeholder="Admin Username" />
-                            <span asp-validation-for="Login.AdminUserId" class="text-danger"></span>
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="Login.Password" class="form-label"></label>
-                            <input asp-for="Login.Password" class="form-control form-control-lg" placeholder="Password" />
-                            <span asp-validation-for="Login.Password" class="text-danger"></span>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(Model.Login.ErrorMessage))
-                        {
-                            <div class="alert alert-danger">@Model.Login.ErrorMessage</div>
-                        }
-                        <button class="btn btn-primary w-100 btn-lg">Login</button>
-                    </form>
-                </div>
-            </div>
 
-            <div class="col-lg-4">
-                <div class="card shadow-lg border-0 rounded-4 p-4 h-100">
-                    <div class="text-center mb-4">
-                        <span class="badge bg-success-subtle text-success">Employee Portal</span>
-                        <h2 class="mt-2">Employee Login</h2>
-                        <p class="text-muted">Enter your Employee No and Password to access your dashboard.</p>
-                    </div>
-                    <form asp-action="EmployeeLogin" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="returnUrl" value="@returnUrl" />
-                        <div class="mb-3">
-                            <label asp-for="EmployeeLogin.EmployeeNo" class="form-label"></label>
-                            <input asp-for="EmployeeLogin.EmployeeNo" class="form-control form-control-lg" placeholder="Employee No" />
-                            <span asp-validation-for="EmployeeLogin.EmployeeNo" class="text-danger"></span>
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="EmployeeLogin.Password" class="form-label"></label>
-                            <input asp-for="EmployeeLogin.Password" class="form-control form-control-lg" placeholder="Password" />
-                            <span asp-validation-for="EmployeeLogin.Password" class="text-danger"></span>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(Model.EmployeeLogin.ErrorMessage))
-                        {
-                            <div class="alert alert-danger">@Model.EmployeeLogin.ErrorMessage</div>
-                        }
-                        <button class="btn btn-success w-100 btn-lg">Login</button>
-                    </form>
-                </div>
-            </div>
-
-            @if (showCompanySetup)
-            {
-                <div class="col-lg-8">
+        @if (showCompanySetup)
+        {
+            <div class="row gy-4 justify-content-center mt-4">
+                <div class="col-xl-10">
                     <div class="card shadow-lg border-0 rounded-4 p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
@@ -164,13 +263,27 @@
                         </form>
                     </div>
                 </div>
-            }
-        </div>
+            </div>
+        }
     </div>
 </section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.querySelectorAll('[data-password-toggle]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = btn.parentElement.querySelector('input');
+                const show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.classList.toggle('showing', show);
+                const label = show ? 'Hide password' : 'Show password';
+                btn.setAttribute('aria-label', label);
+                btn.title = label;
+            });
+        });
+    </script>
 
     @if (showCompanySetup)
     {

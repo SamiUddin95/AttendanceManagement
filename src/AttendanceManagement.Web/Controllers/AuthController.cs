@@ -57,6 +57,7 @@ public class AuthController : Controller
     [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("login")]
     public async Task<IActionResult> Login([Bind(Prefix = "Login")] AdminLoginViewModel viewModel, string? returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
@@ -142,6 +143,7 @@ public class AuthController : Controller
     [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("login")]
     public async Task<IActionResult> EmployeeLogin([Bind(Prefix = "EmployeeLogin")] EmployeeLoginViewModel viewModel, string? returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
@@ -153,9 +155,9 @@ public class AuthController : Controller
 
         var employee = await _context.Employees
             .Include(e => e.Company)
-            .FirstOrDefaultAsync(e => e.EmployeeNo == viewModel.EmployeeNo && e.IsActive);
+            .FirstOrDefaultAsync(e => e.EmployeeNo == viewModel.EmployeeNo && e.IsActive && e.Company!.IsActive);
 
-        if (employee == null || string.IsNullOrWhiteSpace(employee.Password) || !BCrypt.Net.BCrypt.Verify(viewModel.Password, employee.Password))
+        if (employee == null || string.IsNullOrWhiteSpace(employee.Password) || !AttendanceManagement.Web.Security.EmployeePassword.Verify(viewModel.Password, employee.Password))
         {
             viewModel.ErrorMessage = "Invalid Employee No or Password.";
             var invalidLandingModel = await BuildLandingViewModelAsync(returnUrl, null, null, viewModel);
@@ -167,7 +169,7 @@ public class AuthController : Controller
             new(ClaimTypes.NameIdentifier, employee.Id.ToString()),
             new(ClaimTypes.Name, employee.EmployeeNo), // Use EmployeeNo for User.Identity.Name
             new(ClaimTypes.GivenName, employee.Name), // Store actual name in GivenName
-            new(ClaimTypes.Role, "Administrator"), // Employees get Administrator role for SuperUser access
+            new(ClaimTypes.Role, "Employee"),
             new("EmployeeNo", employee.EmployeeNo),
             new("CompanyId", employee.CompanyId.ToString()),
             new("IsEmployee", "true")

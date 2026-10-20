@@ -14,44 +14,7 @@
         return areaMatch && controllerMatch && actionMatch && sectionMatch;
     }
 
-    bool IsAdminModuleActive()
-    {
-        return string.Equals(currentArea, "Administrator", StringComparison.OrdinalIgnoreCase) &&
-               string.Equals(currentController, "Dashboard", StringComparison.OrdinalIgnoreCase) &&
-               (string.Equals(currentAction, "Lookups", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase));
-    }
 
-    var primaryNav = new[]
-    {
-        new { Title = "Dashboard", Icon = "bi-speedometer2", Area = "Administrator", Controller = "Dashboard", Action = "Index" }
-    };
-
-    var adminModules = new List<dynamic>
-    {
-        new { Title = "Company", Icon = "bi-building-gear", Area = "Administrator", Controller = "Company", Action = "Index" },
-        new { Title = "LookUp", Icon = "bi-list-check", Area = "Administrator", Controller = "Dashboard", Action = "Lookups" },
-        new { Title = "Shift", Icon = "bi-clock", Area = "Administrator", Controller = "Shift", Action = "Index" },
-        new { Title = "Leave Policy", Icon = "bi-calendar-check", Area = "Administrator", Controller = "LeavePolicy", Action = "Index" },
-        new { Title = "Leave", Icon = "bi-calendar3", Area = "Administrator", Controller = "Leave", Action = "Index" },
-        new { Title = "Leave Cancellation", Icon = "bi-calendar-x", Area = "Administrator", Controller = "LeaveCancellation", Action = "Index" },
-        new { Title = "Employee", Icon = "bi-person-badge", Area = "Administrator", Controller = "Employee", Action = "Index" },
-        new { Title = "Group", Icon = "bi-people", Area = "Administrator", Controller = "Group", Action = "Index" },
-        new { Title = "Location", Icon = "bi-geo-alt", Area = "Administrator", Controller = "Location", Action = "Index" },
-        new { Title = "Assign Group", Icon = "bi-people-fill", Area = "Administrator", Controller = "AssignGroup", Action = "Index" },
-        new { Title = "Mark Days", Icon = "bi-calendar-check", Area = "Administrator", Controller = "MarkDay", Action = "Index" },
-        new { Title = "Group Shift Assign", Icon = "bi-clock-history", Area = "Administrator", Controller = "GroupShiftAssign", Action = "Index" }
-    };
-
-    var otherModules = new List<dynamic>
-    {
-        new { Title = "Leave", Icon = "bi-calendar-minus", Area = (string?)null, Controller = (string?)null, Action = (string?)null },
-        new { Title = "Gen Incharge", Icon = "bi-person-workspace", Area = (string?)null, Controller = (string?)null, Action = (string?)null },
-        new { Title = "Gen Employee", Icon = "bi-briefcase", Area = (string?)null, Controller = (string?)null, Action = (string?)null },
-        new { Title = "List", Icon = "bi-list-check", Area = (string?)null, Controller = (string?)null, Action = (string?)null },
-        new { Title = "Report", Icon = "bi-graph-up", Area = (string?)null, Controller = (string?)null, Action = (string?)null },
-        new { Title = "Process", Icon = "bi-arrow-repeat", Area = (string?)null, Controller = (string?)null, Action = (string?)null }
-    };
 }
 
 <head>
@@ -81,7 +44,7 @@
                             <div class="user-circle">@User?.Identity?.Name?.FirstOrDefault()</div>
                             <div>
                                 <div class="fw-semibold">@User?.Identity?.Name</div>
-                                <small class="text-muted">Company Admin</small>
+                                <small class="text-muted">@(User?.IsInRole("SuperUser") == true ? "Company Admin" : "Employee")</small>
                             </div>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -115,10 +78,13 @@
         <!-- Main Content -->
         <main class="admin-main">
             <div class="container-fluid">
-                <div class="page-header mb-4">
-                    <h1 class="h4 mb-0">@ViewData["Title"]</h1>
-                    <small class="text-muted">Attendance Intelligence Hub</small>
-                </div>
+                @if (ViewData["HidePageHeader"] as bool? != true)
+                {
+                    <div class="page-header mb-4">
+                        <h1 class="h4 mb-0">@ViewData["Title"]</h1>
+                        <small class="text-muted">Attendance Intelligence Hub</small>
+                    </div>
+                }
                 <section class="admin-content">
                     @RenderBody()
                 </section>

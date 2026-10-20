@@ -1,3 +1,4 @@
+using AttendanceManagement.Web.Security;
 using AttendanceManagement.Domain.Entities;
 using AttendanceManagement.Infrastructure.Data;
 using AttendanceManagement.Web.ViewModels.Calendar;
@@ -44,6 +45,8 @@ public class GenInchargeController : Controller
             .OrderBy(e => e.Name)
             .Select(e => new { e.Id, e.Name, e.EmployeeNo })
             .ToListAsync();
+
+        if (employeeId.HasValue && !teamMembers.Any(e => e.Id == employeeId.Value)) return Forbid();
 
         var selectItems = teamMembers
             .Select(e => new SelectListItem($"{e.Name} ({e.EmployeeNo})", e.Id.ToString(), e.Id == employeeId))
@@ -290,7 +293,10 @@ public class GenInchargeController : Controller
 
         if (!isTeamMember) return Forbid();
 
+        if (application.Status != "Pending") return Conflict("Only pending leave requests can be decided.");
+
         application.InchargeId = incharge.Id;
+        application.Status = "Approved";
         application.InchargeApprovalStatus = "Approved";
         application.InchargeApprovedAt = DateTime.UtcNow;
         application.UpdatedAtUtc = DateTime.UtcNow;
@@ -317,7 +323,10 @@ public class GenInchargeController : Controller
 
         if (!isTeamMember) return Forbid();
 
+        if (application.Status != "Pending") return Conflict("Only pending leave requests can be decided.");
+
         application.InchargeId = incharge.Id;
+        application.Status = "Rejected";
         application.InchargeApprovalStatus = "Rejected";
         application.InchargeApprovedAt = DateTime.UtcNow;
         application.UpdatedAtUtc = DateTime.UtcNow;
@@ -396,12 +405,12 @@ public class GenInchargeController : Controller
 
                 var attendances = await _context.Attendances
                     .Where(a => a.EmployeeId == teamMember.Id &&
-                                a.PunchDateTime >= startDate &&
-                                a.PunchDateTime <= endDate)
+                                a.PunchDateTime >= startDate.AddDays(-1) &&
+                                a.PunchDateTime < endDate.Date.AddDays(2))
                     .OrderBy(a => a.PunchDateTime)
                     .ToListAsync();
 
-                vm.InOutTimingsItems = ProcessInOutAttendances(attendances);
+                vm.InOutTimingsItems = ProcessInOutAttendances(attendances).Where(r => r.Date >= startDate.Date && r.Date <= endDate.Date).ToList();
             }
             else
             {
@@ -450,51 +459,7 @@ public class GenInchargeController : Controller
         };
     }
 
-    private static List<InOutTimingsItem> ProcessInOutAttendances(List<Attendance> attendances)
-    {
-        var items = new List<InOutTimingsItem>();
-        var srNo = 1;
-
-        var groupedByDate = attendances
-            .GroupBy(a => a.PunchDateTime.Date)
-            .OrderBy(g => g.Key);
-
-        foreach (var group in groupedByDate)
-        {
-            var dayRecords = group.OrderBy(a => a.PunchDateTime).ToList();
-            var timeIn = dayRecords.FirstOrDefault(a => a.PunchType == "In")?.PunchDateTime.TimeOfDay;
-            var timeOut = dayRecords.LastOrDefault(a => a.PunchType == "Out")?.PunchDateTime.TimeOfDay;
-
-            TimeSpan? extraHours = null;
-            if (timeIn.HasValue && timeOut.HasValue)
-            {
-                var total = timeOut.Value - timeIn.Value;
-                var standard = TimeSpan.FromHours(8);
-                if (total > standard) extraHours = total - standard;
-            }
-
-            var status = (timeIn.HasValue, timeOut.HasValue) switch
-            {
-                (false, false) => "Absent",
-                (true, false)  => "Half Day (No Out)",
-                (false, true)  => "Half Day (No In)",
-                _ => (timeOut!.Value - timeIn!.Value) < TimeSpan.FromHours(4) ? "Half Day" : "Present"
-            };
-
-            items.Add(new InOutTimingsItem
-            {
-                SrNo = srNo++,
-                Date = group.Key,
-                TimeIn = timeIn,
-                TimeOut = timeOut,
-                ExtraHours = extraHours,
-                Status = status
-            });
-        }
-
-        return items;
-    }
-
+    private static List<InOutTimingsItem> ProcessInOutAttendances(List<Attendance> attendances) => AttendanceManagement.Web.Services.PunchPairing.Build(attendances);
     // ── Leave Sheet ──────────────────────────────────────────────────────────
 
     public async Task<IActionResult> LeaveSheet()
@@ -965,6 +930,7 @@ public class GenInchargeController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SaveShiftSchedule([FromBody] SaveShiftScheduleRequest request)
     {
+        if (request == null || !ModelState.IsValid) return BadRequest("Invalid schedule data.");
         var incharge = await GetLoggedInEmployeeAsync(User.Identity?.Name);
         if (incharge == null) return Forbid();
 
@@ -1165,7 +1131,7 @@ public class GenInchargeController : Controller
                 .ThenInclude(l => l!.LeaveDetails)
             .Include(e => e.Leave)
                 .ThenInclude(l => l!.LeavePolicy)
-            .FirstOrDefaultAsync(e => e.EmployeeNo == userName || e.Email == userName);
+            .ForUser(User).FirstOrDefaultAsync();
     }
 
     private async Task<CalendarViewModel> BuildCalendarViewModelAsync(Employee incharge, int month, int year, int? filterEmployeeId = null, string? viewMode = "team")
@@ -1211,7 +1177,7 @@ public class GenInchargeController : Controller
             // Own birthday
             if (incharge.DateOfBirth.HasValue && incharge.DateOfBirth.Value.Month == month)
             {
-                var bday = new DateTime(year, month, incharge.DateOfBirth.Value.Day);
+                var bday = new DateTime(year, month, Math.Min(incharge.DateOfBirth.Value.Day, DateTime.DaysInMonth(year, month)));
                 if (bday >= startDate && bday <= endDate)
                     events.Add(new CalendarEvent { Date = bday, Title = "Your Birthday", Type = "Birthday", Color = "#e83e8c", Description = "Happy Birthday!" });
             }
@@ -1261,7 +1227,7 @@ public class GenInchargeController : Controller
             // Own birthday
             if (incharge.DateOfBirth.HasValue && incharge.DateOfBirth.Value.Month == month)
             {
-                var bday = new DateTime(year, month, incharge.DateOfBirth.Value.Day);
+                var bday = new DateTime(year, month, Math.Min(incharge.DateOfBirth.Value.Day, DateTime.DaysInMonth(year, month)));
                 if (bday >= startDate && bday <= endDate)
                     events.Add(new CalendarEvent { Date = bday, Title = "Your Birthday", Type = "Birthday", Color = "#e83e8c", Description = "Happy Birthday!" });
             }

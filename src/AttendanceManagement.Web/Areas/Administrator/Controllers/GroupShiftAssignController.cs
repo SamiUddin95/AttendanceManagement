@@ -18,10 +18,10 @@ public class GroupShiftAssignController : Controller
         _context = context;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
         var viewModel = new GroupShiftAssignViewModel();
-        PopulateDropdownsAsync(viewModel).GetAwaiter().GetResult();
+        await PopulateDropdownsAsync(viewModel);
         return View(viewModel);
     }
 
@@ -63,15 +63,28 @@ public class GroupShiftAssignController : Controller
             return View("Index", viewModel);
         }
 
-        // Update selected employees
+        var group = await _context.Groups.FirstOrDefaultAsync(g => g.Id == viewModel.GroupId && g.IsActive);
+        if (group == null || !await _context.Shifts.AnyAsync(s => s.Id == viewModel.AssignedShiftId && s.IsActive && s.CompanyId == group.CompanyId))
+            return BadRequest("Select an active group and a shift from the same company.");
+        var memberIds = _context.GroupEmployees.Where(g => g.GroupId == group.Id && g.IsActive).Select(g => g.EmployeeId);
         var employees = await _context.Employees
-            .Where(e => viewModel.SelectedEmployeeIds.Contains(e.Id))
+            .Where(e => viewModel.SelectedEmployeeIds.Contains(e.Id) && memberIds.Contains(e.Id) && e.IsActive && e.CompanyId == group.CompanyId)
             .ToListAsync();
+        if (employees.Count != viewModel.SelectedEmployeeIds.Distinct().Count())
+            return BadRequest("Only active employees in the selected group can be assigned.");
 
         foreach (var employee in employees)
         {
-            employee.ShiftId = viewModel.AssignedShiftId;
-            employee.AssignedShiftDate = viewModel.AssignedShiftDate;
+            var effective = viewModel.AssignedShiftDate.Date;
+            var schedule = await _context.EmployeeShiftSchedules.FirstOrDefaultAsync(s => s.EmployeeId == employee.Id && s.EffectiveFrom == effective);
+            if (schedule == null)
+                _context.EmployeeShiftSchedules.Add(new() { CompanyId = employee.CompanyId, EmployeeId = employee.Id, ShiftId = viewModel.AssignedShiftId, EffectiveFrom = effective });
+            else { schedule.ShiftId = viewModel.AssignedShiftId; schedule.IsActive = true; schedule.UpdatedAtUtc = DateTime.UtcNow; }
+            if (effective <= DateTime.Today)
+            {
+                employee.ShiftId = viewModel.AssignedShiftId;
+                employee.AssignedShiftDate = effective;
+            }
         }
 
         _context.Employees.UpdateRange(employees);
@@ -89,7 +102,8 @@ public class GroupShiftAssignController : Controller
     private async Task PopulateDropdownsAsync(GroupShiftAssignViewModel viewModel)
     {
         // Get current user's company - for now, use first company
-        var company = await _context.Companies.OrderBy(c => c.Name).FirstOrDefaultAsync();
+        Guid.TryParse(User.FindFirst("CompanyId")?.Value, out var currentCompanyId);
+        var company = await _context.Companies.FirstOrDefaultAsync(c => c.Id == currentCompanyId);
         var companyId = company?.Id ?? Guid.Empty;
         var companyName = company?.Name ?? "Default Company";
 
@@ -110,7 +124,7 @@ public class GroupShiftAssignController : Controller
 
         // Populate shifts
         var shifts = await _context.Shifts
-            .Where(s => s.IsActive)
+            .Where(s => s.IsActive && s.CompanyId == companyId)
             .OrderBy(s => s.Name)
             .ToListAsync();
         viewModel.AvailableShifts = shifts.Select(s => new ShiftSelectItem
@@ -131,6 +145,7 @@ public class GroupShiftAssignController : Controller
         // Get employees assigned to this group
         var groupEmployees = await _context.GroupEmployees
             .Include(ge => ge.Employee)
+                .ThenInclude(e => e!.Shift)
             .Where(ge => ge.GroupId == viewModel.GroupId && ge.IsActive)
             .ToListAsync();
 

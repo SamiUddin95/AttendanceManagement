@@ -1,0 +1,69 @@
+@model AttendanceManagement.Web.ViewModels.Employees.AssignTeamViewModel
+@{ ViewData["Title"] = "Assign Team Members"; }
+<h1 class="h4">Assign Team Members</h1>
+<p class="text-muted">Choose who supervises the team, then select the employees who will report to them.</p>
+<a asp-action="Index" class="btn btn-outline-secondary mb-3">Back to Employees</a>
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div class="alert alert-success" role="status">@message</div>
+}
+<form method="get" class="card card-body mb-3">
+    <label for="inchargePicker" class="form-label">Team incharge</label>
+    <select id="inchargePicker" name="inchargeId" asp-items="Model.Incharges" class="form-select" required>
+        <option value="">Select an incharge</option>
+    </select>
+    <button class="btn btn-primary mt-3 align-self-start" type="submit">Load team</button>
+</form>
+<form asp-action="AssignTeam" method="post">
+    <input asp-for="InchargeId" type="hidden" />
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    @if (Model.InchargeId.HasValue && Model.Incharges.Any(e => e.Value == Model.InchargeId.ToString()))
+    {
+        <h2 class="h5">Team for @Model.Incharges.First(e => e.Value == Model.InchargeId.ToString()).Text</h2>
+        @if (Model.ReportsTo != null)
+        {
+            <div class="alert alert-info">This incharge currently reports to <strong>@Model.ReportsTo</strong>.
+                <a asp-action="Edit" asp-route-id="@Model.InchargeId">Edit their reporting relationship</a> if it is incorrect.</div>
+        }
+        <p>Current team: <strong>@Model.Candidates.Count(e => e.IsMember)</strong> members. Selecting employees adds them to this team; unselected employees keep their assignments.</p>
+        <label for="teamSearch" class="form-label">Find employees by name or number</label>
+        <input id="teamSearch" class="form-control mb-2" type="search" />
+        <label class="mb-2"><input id="selectVisible" type="checkbox" class="form-check-input" /> Select all available employees shown</label>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr><th>Select</th><th>Employee</th><th>Current incharge</th><th>Status</th></tr></thead>
+                <tbody id="teamCandidates">
+                @foreach (var employee in Model.Candidates)
+                {
+                    <tr>
+                        <td><input type="checkbox" name="EmployeeIds" value="@employee.Id" class="form-check-input" aria-label="Select @employee.Name (@employee.EmployeeNo)"
+                            checked="@Model.EmployeeIds.Contains(employee.Id)" disabled="@(!employee.IsActive || employee.IsMember)" /></td>
+                        <td>@employee.Name (@employee.EmployeeNo)</td>
+                        <td>@(employee.Incharge ?? "Unassigned")</td>
+                        <td>@(employee.IsMember ? "Already in this team" : employee.IsActive ? "Available" : "Inactive")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <label class="d-block mb-3"><input asp-for="AllowReassignment" class="form-check-input" /> Move selected employees from their current incharge to this team.</label>
+        <button type="submit" class="btn btn-primary">Assign selected employees</button>
+    }
+</form>
+@section Scripts {
+<script>
+    const picker = document.getElementById('inchargePicker');
+    picker.value = '@Model.InchargeId';
+    const search = document.getElementById('teamSearch');
+    const all = document.getElementById('selectVisible');
+    const rows = [...document.querySelectorAll('#teamCandidates tr')];
+    search?.addEventListener('input', () => {
+        rows.forEach(row => row.hidden = !row.textContent.toLowerCase().includes(search.value.toLowerCase()));
+        all.checked = false;
+    });
+    all?.addEventListener('change', () => rows.filter(row => !row.hidden).forEach(row => {
+        const box = row.querySelector('input');
+        if (!box.disabled) box.checked = all.checked;
+    }));
+</script>
+}

@@ -6,6 +6,34 @@ namespace AttendanceManagement.Infrastructure.Data;
 
 public class AttendanceDbContext : DbContext
 {
+    // Set for delegated employee requests; company superusers retain the existing global administration scope.
+    public Guid? RestrictToCompanyId { get; set; }
+
+    private void ApplyCompanyFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class
+        => modelBuilder.Entity<TEntity>().HasQueryFilter(e => !RestrictToCompanyId.HasValue || EF.Property<Guid>(e, "CompanyId") == RestrictToCompanyId.GetValueOrDefault());
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        if (RestrictToCompanyId.HasValue)
+        {
+            foreach (var entry in ChangeTracker.Entries().Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted).ToList())
+            {
+                var company = entry.Metadata.FindProperty("CompanyId");
+                if (company != null && entry.Property("CompanyId").CurrentValue is Guid companyId && companyId != RestrictToCompanyId)
+                    throw new UnauthorizedAccessException("Cannot change another company's records.");
+                foreach (var foreignKey in entry.Metadata.GetForeignKeys().Where(f => f.PrincipalEntityType.FindProperty("CompanyId") != null))
+                {
+                    var keys = foreignKey.Properties.Select(p => entry.Property(p.Name).CurrentValue).ToArray();
+                    if (keys.Any(k => k == null)) continue;
+                    var principal = await FindAsync(foreignKey.PrincipalEntityType.ClrType, keys, cancellationToken);
+                    if (principal == null) throw new UnauthorizedAccessException("Referenced record is not accessible in this company.");
+                    if (Entry(principal).Property("CompanyId").CurrentValue is Guid owner && owner != RestrictToCompanyId)
+                        throw new UnauthorizedAccessException("Referenced record belongs to another company.");
+                }
+            }
+        }
+        return await base.SaveChangesAsync(cancellationToken);
+    }
     public AttendanceDbContext(DbContextOptions<AttendanceDbContext> options) : base(options)
     {
     }
@@ -43,6 +71,18 @@ public class AttendanceDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        foreach (var type in modelBuilder.Model.GetEntityTypes().Where(t => t.FindProperty("CompanyId")?.ClrType == typeof(Guid)).ToList())
+            GetType().GetMethod(nameof(ApplyCompanyFilter), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                .MakeGenericMethod(type.ClrType).Invoke(this, [modelBuilder]);
+        modelBuilder.Entity<Company>().HasQueryFilter(c => !RestrictToCompanyId.HasValue || c.Id == RestrictToCompanyId.GetValueOrDefault());
+        modelBuilder.Entity<ShiftDay>().HasQueryFilter(d => !RestrictToCompanyId.HasValue || d.Shift.CompanyId == RestrictToCompanyId.GetValueOrDefault());
+        modelBuilder.Entity<LeaveDetail>().HasQueryFilter(d => !RestrictToCompanyId.HasValue || d.Leave!.CompanyId == RestrictToCompanyId.GetValueOrDefault());
+        modelBuilder.Entity<GroupEmployee>().HasQueryFilter(d => !RestrictToCompanyId.HasValue || (d.Group!.CompanyId == RestrictToCompanyId.GetValueOrDefault() && d.Employee!.CompanyId == RestrictToCompanyId.GetValueOrDefault()));
+        modelBuilder.Entity<GroupIncharge>().HasQueryFilter(d => !RestrictToCompanyId.HasValue || (d.Group!.CompanyId == RestrictToCompanyId.GetValueOrDefault() && d.Employee!.CompanyId == RestrictToCompanyId.GetValueOrDefault()));
+        modelBuilder.Entity<GroupDepartment>().HasQueryFilter(d => !RestrictToCompanyId.HasValue || d.Group!.CompanyId == RestrictToCompanyId.GetValueOrDefault());
+        modelBuilder.Entity<GroupDesignation>().HasQueryFilter(d => !RestrictToCompanyId.HasValue || d.Group!.CompanyId == RestrictToCompanyId.GetValueOrDefault());
+        modelBuilder.Entity<GroupLocation>().HasQueryFilter(d => !RestrictToCompanyId.HasValue || d.Group!.CompanyId == RestrictToCompanyId.GetValueOrDefault());        modelBuilder.Entity<Department>().HasQueryFilter(d => !RestrictToCompanyId.HasValue || d.CompanyId == null || d.CompanyId == RestrictToCompanyId.GetValueOrDefault());
 
         modelBuilder.Entity<Company>(entity =>
         {

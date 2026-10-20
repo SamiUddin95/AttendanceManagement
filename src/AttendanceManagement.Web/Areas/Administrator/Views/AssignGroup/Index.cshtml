@@ -1,13 +1,14 @@
 @model AttendanceManagement.Web.ViewModels.AssignGroups.AssignGroupListViewModel
 @{
     ViewData["Title"] = "Assign Group";
+    ViewData["HidePageHeader"] = true;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-   @*  <div>
+    <div>
         <h2 class="h4 mb-1">Assign Group</h2>
         <small class="text-muted">Assign groups to employees with specific criteria</small>
-    </div> *@
+    </div>
     <a asp-action="Create" class="btn btn-primary">
         <i class="bi bi-plus-lg me-2"></i>New Assignment
     </a>

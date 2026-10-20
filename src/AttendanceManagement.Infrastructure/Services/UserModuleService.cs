@@ -23,9 +23,9 @@ internal class UserModuleService : IUserModuleService
     {
         // Build base query with includes
         IQueryable<RoleAssignment> query = _dbContext.RoleAssignments
-            .Where(ra => ra.CompanyId == companyId && ra.IsActive)
+            .Where(ra => ra.CompanyId == companyId && ra.IsActive && ra.Role!.IsActive)
             .Include(ra => ra.Role)
-                .ThenInclude(r => r.RoleModules)
+                .ThenInclude(r => r!.RoleModules)
                     .ThenInclude(rm => rm.Module);
 
         // Apply assignment type filter
@@ -35,7 +35,9 @@ internal class UserModuleService : IUserModuleService
         }
         else if (assignmentType == "Individual")
         {
-            query = query.Where(ra => ra.AssignmentType == "Individual" && ra.EmployeeId == employeeId);
+            var groups = _dbContext.GroupEmployees.Where(g => g.EmployeeId == employeeId && g.IsActive && g.Group!.IsActive).Select(g => g.GroupId);
+            query = query.Where(ra => (ra.AssignmentType == "Individual" && ra.EmployeeId == employeeId) ||
+                (ra.AssignmentType == "Group" && ra.GroupId.HasValue && groups.Contains(ra.GroupId.Value)));
         }
         else
         {

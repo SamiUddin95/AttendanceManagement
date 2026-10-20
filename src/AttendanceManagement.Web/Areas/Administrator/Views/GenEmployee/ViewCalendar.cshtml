@@ -1,6 +1,7 @@
 @model AttendanceManagement.Web.ViewModels.Calendar.CalendarViewModel
 @{
     ViewData["Title"] = "View Calendar";
+    ViewData["HidePageHeader"] = true;
     var monthName = Model.CurrentMonth switch
     {
         1 => "January", 2 => "February", 3 => "March", 4 => "April",

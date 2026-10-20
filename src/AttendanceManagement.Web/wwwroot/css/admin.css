@@ -180,6 +180,10 @@ body.admin-body {
     min-height: 0;
 }
 
+.admin-content:first-child {
+    padding-top: 1.5rem;
+}
+
 .lookup-board {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
