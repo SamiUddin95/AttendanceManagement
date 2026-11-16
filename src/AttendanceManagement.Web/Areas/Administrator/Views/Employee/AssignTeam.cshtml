@@ -1,5 +1,8 @@
 @model AttendanceManagement.Web.ViewModels.Employees.AssignTeamViewModel
-@{ ViewData["Title"] = "Assign Team Members"; }
+@{
+    ViewData["Title"] = "Assign Team Members";
+    ViewData["HidePageHeader"] = true;
+}
 <h1 class="h4">Assign Team Members</h1>
 <p class="text-muted">Choose who supervises the team, then select the employees who will report to them.</p>
 <a asp-action="Index" class="btn btn-outline-secondary mb-3">Back to Employees</a>

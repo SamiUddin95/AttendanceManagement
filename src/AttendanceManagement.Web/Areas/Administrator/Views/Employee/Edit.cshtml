@@ -4,14 +4,14 @@
     ViewData["HidePageHeader"] = true;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    @if (Model.Id > 0)
-    {
-        <a asp-action="AssignTeam" asp-route-inchargeId="@Model.Id" class="btn btn-outline-primary">Assign team members to @Model.Name (@Model.EmployeeNo)</a>
-    }
-    <div>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div class="d-flex flex-column align-items-start gap-2">
         <h2 class="h4 mb-1">@(Model.Id > 0 ? "Edit Employee" : "Create Employee")</h2>
         <small class="text-muted">Manage employee information and details</small>
+        @if (Model.Id > 0)
+        {
+            <a asp-action="AssignTeam" asp-route-inchargeId="@Model.Id" class="btn btn-outline-primary">Assign team members to @Model.Name (@Model.EmployeeNo)</a>
+        }
     </div>
     <a asp-action="Index" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-2"></i>Back to List
