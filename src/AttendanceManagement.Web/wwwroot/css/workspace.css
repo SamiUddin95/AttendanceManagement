@@ -96,6 +96,35 @@ a { text-underline-offset: 3px; }
 .admin-content .nav-link.active { color: #066571; }
 .admin-content .nav-pills .nav-link.active { background: #087f8c; color: #fff; }
 .lookup-add { background: #087f8c; box-shadow: none; border-radius: 8px; letter-spacing: 0; text-transform: none; }
+.lookup-board { gap: 20px; align-items: stretch; }
+.lookup-card { padding: 22px; border-radius: 13px; box-shadow: 0 2px 8px rgb(28 48 64 / 4%); transition: border-color .18s ease, box-shadow .18s ease; }
+.lookup-card:hover { border-color: #c7d9dc; box-shadow: 0 8px 22px rgb(28 48 64 / 7%); }
+.lookup-card.is-focused { border-color: #87babd; box-shadow: 0 0 0 3px rgb(8 127 140 / 9%); }
+.lookup-card__header { align-items: center; padding-bottom: 16px; border-bottom: 1px solid #e7edef; }
+.lookup-card__eyebrow { color: #647b88; font-size: .68rem; letter-spacing: .13em; font-weight: 700; margin-bottom: 6px; }
+.lookup-card__header h2 { font-size: 1.2rem; }
+.lookup-add { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 9px 15px; color: #fff; background: #087f8c; border: 1px solid #087f8c; box-shadow: 0 2px 4px rgb(8 127 140 / 13%); text-transform: none; white-space: nowrap; }
+.lookup-add:hover, .lookup-add:focus-visible { color: #fff; background: #066571; border-color: #066571; }
+.lookup-table thead th { color: #526c79; letter-spacing: .07em; border-bottom-color: #dce5e9; }
+.lookup-table tbody tr:hover { background: #f1f8f8; }
+.lookup-toggle input:checked + span { background: #087f8c; }
+.lookup-toggle input:focus-visible + span { outline: 3px solid rgb(8 127 140 / 35%); outline-offset: 2px; }
+.lookup-action { border-width: 1px; border-radius: 7px; padding: 6px 10px; letter-spacing: .015em; text-transform: none; transition: color .15s, background-color .15s, border-color .15s; }
+.lookup-action--edit { color: #066571; border-color: #83b5b8; }
+.lookup-action--edit:hover { color: #fff; background: #087f8c; border-color: #087f8c; }
+.lookup-action--delete { color: #a33d46; border-color: #dca6aa; }
+.lookup-action--delete:hover { color: #fff; background: #a33d46; border-color: #a33d46; }
+.lookup-board .pagination .page-link { color: #066571; border-color: #dce5e9; }
+.lookup-board .pagination .page-item.active .page-link { color: #fff; background: #087f8c; border-color: #087f8c; }
+.lookup-board .pagination .page-link:hover { background: #e9f5f4; }
+.lookup-board .modal-content { border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 18px 50px rgb(28 48 64 / 17%); }
+.lookup-board .modal-header, .lookup-board .modal-footer { border-color: #e5ecef; }
+@media (max-width: 575.98px) {
+    .lookup-card { padding: 16px; }
+    .lookup-card__header { align-items: flex-start; }
+    .lookup-table thead th { padding: 11px 10px; }
+    .lookup-table tbody td { padding: 12px 10px; }
+}
 .public-shell > header { padding: 20px 0 !important; }
 .public-shell .auth-wrap { background: #eef3f5; padding: 48px 0 !important; }
 .public-shell .auth-card { border: 1px solid var(--line) !important; border-radius: 18px; box-shadow: 0 16px 48px rgb(28 48 64 / 8%); }

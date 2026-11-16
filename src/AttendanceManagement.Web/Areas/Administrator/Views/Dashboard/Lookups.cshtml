@@ -7,6 +7,13 @@
     @foreach (var section in Model.Sections)
     {
         var isFocus = string.Equals(section.Key, Model.ActiveSection, StringComparison.OrdinalIgnoreCase);
+        var addLabel = section.Key switch
+        {
+            "categories" => "Add category",
+            "designations" => "Add designation",
+            "departments" => "Add department",
+            _ => $"Add {section.Title.ToLowerInvariant()}"
+        };
         <article class="lookup-card @(isFocus ? "is-focused" : string.Empty)" id="card-@(section.Key)">
             <header class="lookup-card__header">
                 <div>
@@ -14,9 +21,9 @@
                     <h2>@(section.Title)</h2>
                     <p class="text-muted mb-0">@(section.Description)</p>
                 </div>
-                <button type="button" class="btn lookup-add" data-section="@(section.Key)" data-action="add">
-                    <i class="bi bi-plus-lg me-2"></i>
-                    Add New
+                <button type="button" class="btn lookup-add" data-section="@(section.Key)" data-action="add" aria-label="@addLabel">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                    <span>@addLabel</span>
                 </button>
             </header>
             <div class="lookup-card__body">
