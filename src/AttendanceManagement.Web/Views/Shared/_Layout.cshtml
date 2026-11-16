@@ -1,13 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Attendance Management</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
+    <link rel="stylesheet" href="~/css/workspace.css" asp-append-version="true" />
 </head>
 <body class="public-shell d-flex flex-column min-vh-100">
     <header class="border-bottom py-3 bg-white">
@@ -16,12 +16,12 @@
                 <span class="badge bg-primary rounded-3 fs-6">AMS</span>
                 <div>
                     <div class="fw-bold">Attendance Management System</div>
-                    <small class="text-muted">Smart workforce orchestration</small>
+                    <small class="text-muted">People, schedules &amp; everyday operations</small>
                 </div>
             </div>
         </div>
     </header>
-    <main class="flex-grow-1">
+    <main class="flex-grow-1" id="main-content" tabindex="-1">
         @RenderBody()
     </main>
     <footer class="border-top py-4 text-center text-muted">

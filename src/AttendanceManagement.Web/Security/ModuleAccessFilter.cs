@@ -13,6 +13,9 @@ public sealed class ModuleAccessFilter(AttendanceDbContext db) : IAsyncActionFil
     {
         foreach (var pair in context.HttpContext.Request.Query)
         {
+            // The calendar year is optional. An empty year selection should use
+            // the controller's current-year default just like an omitted value.
+            if (string.IsNullOrWhiteSpace(pair.Value)) continue;
             if (pair.Key.Equals("month", StringComparison.OrdinalIgnoreCase) && (!int.TryParse(pair.Value, out var month) || month < 1 || month > 12)
                 || pair.Key.Equals("year", StringComparison.OrdinalIgnoreCase) && (!int.TryParse(pair.Value, out var year) || year < 2000 || year > 2100))
             { context.Result = new BadRequestObjectResult("Choose a valid month and a year between 2000 and 2100."); return; }
@@ -21,6 +24,7 @@ public sealed class ModuleAccessFilter(AttendanceDbContext db) : IAsyncActionFil
         {
             foreach (var pair in context.HttpContext.Request.Form)
             {
+                if (string.IsNullOrWhiteSpace(pair.Value)) continue;
                 if ((pair.Key.Equals("SelectedMonth", StringComparison.OrdinalIgnoreCase) || pair.Key == "month") && (!int.TryParse(pair.Value, out var month) || month < 1 || month > 12)
                     || (pair.Key.Equals("SelectedYear", StringComparison.OrdinalIgnoreCase) || pair.Key == "year") && (!int.TryParse(pair.Value, out var year) || year < 2000 || year > 2100))
                 { context.Result = new BadRequestObjectResult("Invalid reporting period."); return; }

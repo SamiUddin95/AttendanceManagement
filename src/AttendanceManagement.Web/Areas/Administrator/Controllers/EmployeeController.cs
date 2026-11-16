@@ -21,9 +21,10 @@ public class EmployeeController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index(string? search)
+    public async Task<IActionResult> Index(string? search, int page = 1)
     {
         var query = _context.Employees
+            .AsNoTracking()
             .Include(e => e.Company)
             .Include(e => e.Department)
             .Include(e => e.Category)
@@ -36,7 +37,17 @@ public class EmployeeController : Controller
                                      e.EmployeeNo.Contains(search));
         }
 
-        var employees = await query.ToListAsync();
+        var total = await query.CountAsync();
+        const int pageSize = 25;
+        var totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+        page = Math.Clamp(page, 1, totalPages);
+        var employees = await query.OrderBy(e => e.Name).ThenBy(e => e.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        ViewBag.Page = page;
+        ViewBag.PageSize = pageSize;
+        ViewBag.Total = total;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.Search = search;
         var viewModels = employees.Select(e => new EmployeeViewModel
         {
             Id = e.Id,

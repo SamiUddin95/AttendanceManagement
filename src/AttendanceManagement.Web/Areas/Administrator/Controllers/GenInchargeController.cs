@@ -702,8 +702,8 @@ public class GenInchargeController : Controller
             .ToListAsync();
 
         var markDays = await _context.MarkDays
-            .Where(md => md.CompanyId == member.CompanyId && groupIds.Contains(md.GroupId)
-                      && md.FromDate <= endDate && md.ToDate >= startDate)
+            .Where(md => md.CompanyId == member.CompanyId && (md.AppliesToAllGroups || (md.GroupId.HasValue && groupIds.Contains(md.GroupId.Value)))
+                      && ((md.FromDate <= endDate && md.ToDate >= startDate) || md.RepeatsYearly))
             .OrderBy(md => md.CreatedAtUtc)
             .ToListAsync();
 
@@ -726,7 +726,7 @@ public class GenInchargeController : Controller
             string? source = shift?.Name;
 
             // Most recently created mark day wins when ranges overlap
-            var mark = markDays.LastOrDefault(m => m.FromDate.Date <= date && m.ToDate.Date >= date);
+            var mark = markDays.LastOrDefault(m => AttendanceManagement.Web.Services.MarkDayDates.GetOccurrences(m, date, date).Any());
             if (mark != null)
             {
                 (status, source) = mark switch
@@ -1236,13 +1236,11 @@ public class GenInchargeController : Controller
         // Company holidays always shown
         var markDays = await _context.MarkDays
             .Where(md => md.CompanyId == incharge.CompanyId &&
-                         md.FromDate <= endDate && md.ToDate >= startDate)
+                         ((md.FromDate <= endDate && md.ToDate >= startDate) || md.RepeatsYearly))
             .ToListAsync();
 
         foreach (var md in markDays)
         {
-            var s = md.FromDate > startDate ? md.FromDate : startDate;
-            var e = md.ToDate < endDate ? md.ToDate : endDate;
             var title = md.IsGazettedHoliday ? "Gazetted Holiday"
                       : md.IsProvincialHoliday ? "Provincial Holiday"
                       : md.IsEid ? "Eid Holiday"
@@ -1250,7 +1248,7 @@ public class GenInchargeController : Controller
                       : md.IsOn ? "Working Day"
                       : md.IsOff ? "Off Day"
                       : "Holiday";
-            for (var d = s; d <= e; d = d.AddDays(1))
+            foreach (var d in AttendanceManagement.Web.Services.MarkDayDates.GetOccurrences(md, startDate, endDate))
                 events.Add(new CalendarEvent { Date = d, Title = title, Type = "Holiday", Color = "#198754", Description = title });
         }
 

@@ -138,7 +138,7 @@ public class InOutTimingsController : Controller
             .Where(a => a.EmployeeId == employee.Id &&
                         a.PunchDateTime >= startDate.AddDays(-1) &&
                         a.PunchDateTime < endDate.Date.AddDays(2))
-            .OrderBy(a => a.PunchDateTime)
+            .OrderByDescending(a => a.PunchDateTime)
             .ToListAsync();
 
         // Process attendances to create In/Out pairs
@@ -160,5 +160,12 @@ public class InOutTimingsController : Controller
     }
 
     private List<InOutTimingsItem> ProcessAttendances(List<Attendance> attendances, DateTime startDate, DateTime endDate, bool isPayrollWise)
-        => AttendanceManagement.Web.Services.PunchPairing.Build(attendances).Where(r => r.Date >= startDate.Date && r.Date <= endDate.Date).ToList();
+    {
+        var rows = AttendanceManagement.Web.Services.PunchPairing.Build(attendances)
+            .Where(r => r.Date >= startDate.Date && r.Date <= endDate.Date)
+            .OrderByDescending(r => r.Date)
+            .ToList();
+        for (var index = 0; index < rows.Count; index++) rows[index].SrNo = index + 1;
+        return rows;
+    }
 }

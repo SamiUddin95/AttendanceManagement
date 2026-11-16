@@ -68,7 +68,7 @@
                                             <i class="bi bi-calendar-check"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-semibold text-dark">@markDay.GroupName</div>
+                                            <div class="fw-semibold text-dark">@(markDay.AppliesToAllGroups ? "All groups" : markDay.GroupName)</div>
                                             <small class="text-muted">ID: @markDay.Id</small>
                                         </div>
                                     </div>
@@ -83,6 +83,7 @@
                                     <div class="small">
                                         <div>@markDay.FromDate.ToString("dd MMM yyyy")</div>
                                         <div class="text-muted">to @markDay.ToDate.ToString("dd MMM yyyy")</div>
+                                        @if (markDay.RepeatsYearly) { <span class="badge bg-info-subtle text-info-emphasis mt-1">Every year</span> }
                                     </div>
                                 </td>
                                 <td>

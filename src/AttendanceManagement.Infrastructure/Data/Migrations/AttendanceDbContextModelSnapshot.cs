@@ -44,6 +44,7 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("GroupId")
+                        .IsRequired(false)
                         .HasColumnType("int");
 
                     b.Property<int?>("InchargeCategoryId")
@@ -1053,7 +1054,7 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                     b.Property<DateTime>("FromDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("GroupId")
+                    b.Property<int?>("GroupId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsEid")
@@ -1072,6 +1073,12 @@ namespace AttendanceManagement.Infrastructure.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsStrike")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RepeatsYearly")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AppliesToAllGroups")
                         .HasColumnType("bit");
 
                     b.Property<DateTime>("ToDate")

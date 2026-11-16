@@ -10,8 +10,7 @@ public class MarkDay
     [Required]
     public Guid CompanyId { get; set; }
 
-    [Required]
-    public int GroupId { get; set; }
+    public int? GroupId { get; set; }
 
     [Required]
     public DateTime FromDate { get; set; }
@@ -29,6 +28,10 @@ public class MarkDay
     public bool IsProvincialHoliday { get; set; } = false;
     public bool IsStrike { get; set; } = false;
     public bool IsEid { get; set; } = false;
+
+    public bool RepeatsYearly { get; set; } = false;
+
+    public bool AppliesToAllGroups { get; set; } = false;
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAtUtc { get; set; }

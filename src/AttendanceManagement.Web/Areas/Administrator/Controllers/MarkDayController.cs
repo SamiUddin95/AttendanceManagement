@@ -48,7 +48,9 @@ public class MarkDayController : Controller
             IsGazettedHoliday = md.IsGazettedHoliday,
             IsProvincialHoliday = md.IsProvincialHoliday,
             IsStrike = md.IsStrike,
-            IsEid = md.IsEid
+            IsEid = md.IsEid,
+            RepeatsYearly = md.RepeatsYearly,
+            AppliesToAllGroups = md.AppliesToAllGroups
         }).ToList();
 
         var listViewModel = new MarkDayListViewModel
@@ -75,7 +77,9 @@ public class MarkDayController : Controller
             ModelState.AddModelError("ToDate", "End date must be on or after start date.");
         if (new[] { viewModel.IsOn, viewModel.IsOff, viewModel.IsGazettedHoliday, viewModel.IsProvincialHoliday, viewModel.IsStrike, viewModel.IsEid }.Count(v => v) != 1)
             ModelState.AddModelError("IsOn", "Select exactly one day status.");
-        if (!await _context.Groups.AnyAsync(g => g.Id == viewModel.GroupId && g.CompanyId == viewModel.CompanyId))
+        if (viewModel.RepeatsYearly && !(viewModel.IsGazettedHoliday || viewModel.IsProvincialHoliday))
+            ModelState.AddModelError("RepeatsYearly", "Yearly repeat is available for gazetted or provincial holidays.");
+        if (!viewModel.AppliesToAllGroups && (!viewModel.GroupId.HasValue || !await _context.Groups.AnyAsync(g => g.Id == viewModel.GroupId && g.CompanyId == viewModel.CompanyId)))
             ModelState.AddModelError("GroupId", "Select a group from this company.");
         if (!ModelState.IsValid)
         {
@@ -97,7 +101,7 @@ public class MarkDayController : Controller
         var markDay = new MarkDay
         {
             CompanyId = viewModel.CompanyId,
-            GroupId = viewModel.GroupId,
+            GroupId = viewModel.AppliesToAllGroups ? null : viewModel.GroupId,
             FromDate = viewModel.FromDate,
             ToDate = viewModel.ToDate,
             TotalDays = viewModel.TotalDays,
@@ -106,7 +110,9 @@ public class MarkDayController : Controller
             IsGazettedHoliday = viewModel.IsGazettedHoliday,
             IsProvincialHoliday = viewModel.IsProvincialHoliday,
             IsStrike = viewModel.IsStrike,
-            IsEid = viewModel.IsEid
+            IsEid = viewModel.IsEid,
+            RepeatsYearly = viewModel.RepeatsYearly,
+            AppliesToAllGroups = viewModel.AppliesToAllGroups
         };
 
         _context.MarkDays.Add(markDay);
@@ -143,7 +149,9 @@ public class MarkDayController : Controller
             IsGazettedHoliday = markDay.IsGazettedHoliday,
             IsProvincialHoliday = markDay.IsProvincialHoliday,
             IsStrike = markDay.IsStrike,
-            IsEid = markDay.IsEid
+            IsEid = markDay.IsEid,
+            RepeatsYearly = markDay.RepeatsYearly,
+            AppliesToAllGroups = markDay.AppliesToAllGroups
         };
 
         await PopulateDropdownsAsync(viewModel);
@@ -163,7 +171,9 @@ public class MarkDayController : Controller
             ModelState.AddModelError("ToDate", "End date must be on or after start date.");
         if (new[] { viewModel.IsOn, viewModel.IsOff, viewModel.IsGazettedHoliday, viewModel.IsProvincialHoliday, viewModel.IsStrike, viewModel.IsEid }.Count(v => v) != 1)
             ModelState.AddModelError("IsOn", "Select exactly one day status.");
-        if (!await _context.Groups.AnyAsync(g => g.Id == viewModel.GroupId && g.CompanyId == viewModel.CompanyId))
+        if (viewModel.RepeatsYearly && !(viewModel.IsGazettedHoliday || viewModel.IsProvincialHoliday))
+            ModelState.AddModelError("RepeatsYearly", "Yearly repeat is available for gazetted or provincial holidays.");
+        if (!viewModel.AppliesToAllGroups && (!viewModel.GroupId.HasValue || !await _context.Groups.AnyAsync(g => g.Id == viewModel.GroupId && g.CompanyId == viewModel.CompanyId)))
             ModelState.AddModelError("GroupId", "Select a group from this company.");
         if (!ModelState.IsValid)
         {
@@ -180,7 +190,7 @@ public class MarkDayController : Controller
             return NotFound();
         }
 
-        markDay.GroupId = viewModel.GroupId;
+        markDay.GroupId = viewModel.AppliesToAllGroups ? null : viewModel.GroupId;
         markDay.FromDate = viewModel.FromDate;
         markDay.ToDate = viewModel.ToDate;
         markDay.TotalDays = viewModel.TotalDays;
@@ -190,6 +200,8 @@ public class MarkDayController : Controller
         markDay.IsProvincialHoliday = viewModel.IsProvincialHoliday;
         markDay.IsStrike = viewModel.IsStrike;
         markDay.IsEid = viewModel.IsEid;
+        markDay.RepeatsYearly = viewModel.RepeatsYearly;
+        markDay.AppliesToAllGroups = viewModel.AppliesToAllGroups;
         markDay.UpdatedAtUtc = DateTime.UtcNow;
 
         _context.MarkDays.Update(markDay);

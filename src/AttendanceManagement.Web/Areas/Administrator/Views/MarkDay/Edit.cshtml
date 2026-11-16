@@ -31,15 +31,22 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-6" id="mark-day-group-picker">
                             <label asp-for="CompanyId" class="form-label fw-semibold">Company</label>
                             <input type="text" class="form-control bg-light" value="@Model.CompanyName" disabled />
                             <input type="hidden" asp-for="CompanyId" />
                             <small class="text-muted">Company is read-only</small>
                         </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input asp-for="AppliesToAllGroups" class="form-check-input" />
+                                <label asp-for="AppliesToAllGroups" class="form-check-label fw-semibold">Apply to all groups in this company</label>
+                            </div>
+                            <small class="text-muted">When enabled, this holiday appears on every employee’s calendar in the company.</small>
+                        </div>
                         <div class="col-md-6">
                             <label asp-for="GroupId" class="form-label fw-semibold">Group</label>
-                            <select asp-for="GroupId" class="form-select" required>
+                            <select asp-for="GroupId" class="form-select">
                                 <option value="">-- Select Group --</option>
                                 @foreach (var group in Model.AvailableGroups)
                                 {
@@ -87,6 +94,12 @@
                     <h5 class="mb-0"><i class="bi bi-flag me-2 text-primary"></i>Status</h5>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info small">Select a gazetted or provincial holiday to make it repeat on the same dates every year.</div>
+                    <div class="form-check form-switch mb-3">
+                        <input asp-for="RepeatsYearly" class="form-check-input" />
+                        <label asp-for="RepeatsYearly" class="form-check-label fw-semibold">Repeat every year</label>
+                        <span asp-validation-for="RepeatsYearly" class="text-danger d-block"></span>
+                    </div>
                     <div class="mb-3">
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" asp-for="IsOn" />
@@ -169,6 +182,16 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        const appliesToAllGroups = document.getElementById('AppliesToAllGroups');
+        const markDayGroup = document.getElementById('GroupId');
+        function syncGroupRequirement() {
+            markDayGroup.required = !appliesToAllGroups.checked;
+            markDayGroup.disabled = appliesToAllGroups.checked;
+            if (appliesToAllGroups.checked) markDayGroup.value = '';
+        }
+        appliesToAllGroups.addEventListener('change', syncGroupRequirement);
+        syncGroupRequirement();
+
         // Auto-calculate total days when dates change
         document.addEventListener('DOMContentLoaded', function() {
             const fromDate = document.getElementById('FromDate');

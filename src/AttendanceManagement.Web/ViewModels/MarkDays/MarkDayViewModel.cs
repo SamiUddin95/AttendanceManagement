@@ -11,8 +11,7 @@ public class MarkDayViewModel
 
     public string? CompanyName { get; set; }
 
-    [Required]
-    public int GroupId { get; set; }
+    public int? GroupId { get; set; }
 
     public string? GroupName { get; set; }
 
@@ -32,6 +31,10 @@ public class MarkDayViewModel
     public bool IsProvincialHoliday { get; set; } = false;
     public bool IsStrike { get; set; } = false;
     public bool IsEid { get; set; } = false;
+
+    public bool RepeatsYearly { get; set; }
+
+    public bool AppliesToAllGroups { get; set; }
 
     // Dropdown options
     public List<GroupSelectItem> AvailableGroups { get; set; } = new();

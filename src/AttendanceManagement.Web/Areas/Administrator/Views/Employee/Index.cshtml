@@ -34,7 +34,7 @@
                     <span class="input-group-text bg-light">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" name="search" class="form-control" placeholder="Search by name, employee no..." />
+                    <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Search by name, employee no..." />
                 </div>
             </div>
             <div class="col-md-2">
@@ -49,7 +49,7 @@
 <div class="card shadow-sm">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" data-no-pagination>
                 <thead class="table-light">
                     <tr>
                         <th class="ps-4">Employee</th>
@@ -153,6 +153,20 @@
             </table>
         </div>
     </div>
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="table-pagination">
+            <span>Showing @(((int)ViewBag.Page - 1) * (int)ViewBag.PageSize + 1)–@Math.Min((int)ViewBag.Page * (int)ViewBag.PageSize, (int)ViewBag.Total) of @ViewBag.Total employees</span>
+            <nav aria-label="Employee pages"><ul class="pagination pagination-sm mb-0">
+                <li class="page-item @((int)ViewBag.Page == 1 ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-route-page="@((int)ViewBag.Page - 1)" asp-route-search="@ViewBag.Search">Previous</a></li>
+                @for (var pageNumber = 1; pageNumber <= (int)ViewBag.TotalPages; pageNumber++)
+                {
+                    <li class="page-item @(pageNumber == (int)ViewBag.Page ? "active" : "")"><a class="page-link" asp-action="Index" asp-route-page="@pageNumber" asp-route-search="@ViewBag.Search" aria-current="@(pageNumber == (int)ViewBag.Page ? "page" : null)">@pageNumber</a></li>
+                }
+                <li class="page-item @((int)ViewBag.Page == (int)ViewBag.TotalPages ? "disabled" : "")"><a class="page-link" asp-action="Index" asp-route-page="@((int)ViewBag.Page + 1)" asp-route-search="@ViewBag.Search">Next</a></li>
+            </ul></nav>
+        </div>
+    }
 </div>
 
 <style>

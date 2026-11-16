@@ -446,17 +446,13 @@ public class GenEmployeeController : Controller
         var groupIds = _context.GroupEmployees.Where(g => g.EmployeeId == employee.Id && g.IsActive).Select(g => g.GroupId);
         // Get MarkDays (holidays) for this month
         var markDays = await _context.MarkDays
-            .Where(md => md.CompanyId == employee.CompanyId && groupIds.Contains(md.GroupId) &&
-                         md.FromDate <= endDate &&
-                         md.ToDate >= startDate)
+            .Where(md => md.CompanyId == employee.CompanyId && (md.AppliesToAllGroups || (md.GroupId.HasValue && groupIds.Contains(md.GroupId.Value))) &&
+                         ((md.FromDate <= endDate && md.ToDate >= startDate) || md.RepeatsYearly))
             .ToListAsync();
 
         foreach (var md in markDays)
         {
-            var holidayStart = md.FromDate > startDate ? md.FromDate : startDate;
-            var holidayEnd = md.ToDate < endDate ? md.ToDate : endDate;
-
-            for (var date = holidayStart; date <= holidayEnd; date = date.AddDays(1))
+            foreach (var date in AttendanceManagement.Web.Services.MarkDayDates.GetOccurrences(md, startDate, endDate))
             {
                 var holidayTitle = "Holiday";
                 if (md.IsGazettedHoliday) holidayTitle = "Gazetted Holiday";
