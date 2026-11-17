@@ -1,0 +1,97 @@
+@model AttendanceManagement.Web.ViewModels.Shifts.ShiftViewModel
+<section class="shift-week mb-4" aria-labelledby="weekly-schedule-title">
+<h3 class="h5 mb-1" id="weekly-schedule-title">Weekly schedule</h3>
+<p class="text-muted mb-3">Open a day to set its hours. Use 24-hour time: 08:30 for morning or 20:30 for evening.</p>
+@for (int i = 0; i < Model.ShiftDays.Count; i++)
+{
+    var dayName = ((DayOfWeek)Model.ShiftDays[i].DayOfWeek).ToString();
+    <details class="shift-day" open="@(i == 0)">
+    <summary><span class="shift-day-name">@dayName</span><span class="shift-day-summary">@(Model.ShiftDays[i].IsWorking ? "Working day" : "Open to configure")</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
+    <div class="shift-day-body">
+    <input type="hidden" asp-for="ShiftDays[i].Id" />
+    <input type="hidden" asp-for="ShiftDays[i].ShiftId" />
+    <input type="hidden" asp-for="ShiftDays[i].DayOfWeek" />
+    <input type="hidden" asp-for="ShiftDays[i].DayName" value="@dayName" />
+    <input type="hidden" asp-for="ShiftDays[i].CopyFromPrevious" />
+    <fieldset class="mb-3">
+    <legend class="form-label fs-6 fw-semibold">What type of day is this?</legend>
+    <div class="shift-day-types">
+<label class="shift-type"><input asp-for="ShiftDays[i].IsWorking" class="form-check-input" data-day-type="IsWorking" /><span>Working day</span></label>
+<label class="shift-type"><input asp-for="ShiftDays[i].IsAlternate" class="form-check-input" data-day-type="IsAlternate" /><span>Alternate</span></label>
+@if (Model.ShiftDays[i].DayOfWeek == 0) {
+<label class="shift-type"><input asp-for="ShiftDays[i].IsSunday" class="form-check-input" data-day-type="IsSunday" /><span>Sunday off</span></label>
+}
+@if (Model.ShiftDays[i].DayOfWeek != 0) {
+<label class="shift-type"><input asp-for="ShiftDays[i].IsHoliday" class="form-check-input" data-day-type="IsHoliday" /><span>Holiday</span></label>
+}
+<label class="shift-type"><input asp-for="ShiftDays[i].IsOther" class="form-check-input" data-day-type="IsOther" /><span>Other</span></label>
+</div><small class="text-muted">Choose one option. Use Mark Days to configure public holidays.</small></fieldset>
+<div class="shift-other mb-3"><fieldset class="shift-time-field">
+<legend class="form-label fs-6 fw-semibold">Other duration</legend>
+<div class="shift-time-pair">
+<label><input asp-for="ShiftDays[i].OtherHours" type="number" min="0" max="23" class="form-control" placeholder="00" data-timing="OtherHours" /><span>Hours</span></label>
+<span aria-hidden="true">:</span>
+<label><input asp-for="ShiftDays[i].OtherMinutes" type="number" min="0" max="59" class="form-control" placeholder="00" data-timing="OtherMinutes" /><span>Minutes</span></label>
+</div></fieldset></div>
+<div class="shift-working">
+@if (i > 0) {
+<button type="button" class="btn btn-outline-secondary btn-sm mb-3 shift-copy"><i class="bi bi-copy me-2" aria-hidden="true"></i>Copy previous day’s timings</button>
+}
+<div class="shift-time-grid"><fieldset class="shift-time-field">
+<legend class="form-label fs-6 fw-semibold">Start time</legend>
+<div class="shift-time-pair">
+<label><input asp-for="ShiftDays[i].StartTimeHours" type="number" min="0" max="23" class="form-control" placeholder="00" data-timing="StartTimeHours" /><span>Hours</span></label>
+<span aria-hidden="true">:</span>
+<label><input asp-for="ShiftDays[i].StartTimeMinutes" type="number" min="0" max="59" class="form-control" placeholder="00" data-timing="StartTimeMinutes" /><span>Minutes</span></label>
+</div></fieldset><fieldset class="shift-time-field">
+<legend class="form-label fs-6 fw-semibold">Shift duration</legend>
+<div class="shift-time-pair">
+<label><input asp-for="ShiftDays[i].DurationHours" type="number" min="0" max="23" class="form-control" placeholder="00" data-timing="DurationHours" /><span>Hours</span></label>
+<span aria-hidden="true">:</span>
+<label><input asp-for="ShiftDays[i].DurationMinutes" type="number" min="0" max="59" class="form-control" placeholder="00" data-timing="DurationMinutes" /><span>Minutes</span></label>
+</div></fieldset></div>
+<p class="shift-hours-preview text-muted small mt-2" aria-live="polite"></p>
+<details class="shift-options">
+<summary>Breaks <span class="text-muted fw-normal">Lunch, prayer and tea</span></summary>
+<p class="text-muted small mt-3">Enter each break duration. Leave blank if no break is configured.</p>
+<div class="shift-time-grid"><fieldset class="shift-time-field">
+<legend class="form-label fs-6 fw-semibold">Lunch break</legend>
+<div class="shift-time-pair">
+<label><input asp-for="ShiftDays[i].LunchBreakHours" type="number" min="0" max="23" class="form-control" placeholder="00" data-timing="LunchBreakHours" /><span>Hours</span></label>
+<span aria-hidden="true">:</span>
+<label><input asp-for="ShiftDays[i].LunchBreakMinutes" type="number" min="0" max="59" class="form-control" placeholder="00" data-timing="LunchBreakMinutes" /><span>Minutes</span></label>
+</div></fieldset><fieldset class="shift-time-field">
+<legend class="form-label fs-6 fw-semibold">Prayer break</legend>
+<div class="shift-time-pair">
+<label><input asp-for="ShiftDays[i].PrayerBreakHours" type="number" min="0" max="23" class="form-control" placeholder="00" data-timing="PrayerBreakHours" /><span>Hours</span></label>
+<span aria-hidden="true">:</span>
+<label><input asp-for="ShiftDays[i].PrayerBreakMinutes" type="number" min="0" max="59" class="form-control" placeholder="00" data-timing="PrayerBreakMinutes" /><span>Minutes</span></label>
+</div></fieldset><fieldset class="shift-time-field">
+<legend class="form-label fs-6 fw-semibold">Tea break</legend>
+<div class="shift-time-pair">
+<label><input asp-for="ShiftDays[i].TeaBreakHours" type="number" min="0" max="23" class="form-control" placeholder="00" data-timing="TeaBreakHours" /><span>Hours</span></label>
+<span aria-hidden="true">:</span>
+<label><input asp-for="ShiftDays[i].TeaBreakMinutes" type="number" min="0" max="59" class="form-control" placeholder="00" data-timing="TeaBreakMinutes" /><span>Minutes</span></label>
+</div></fieldset></div>
+</details>
+<details class="shift-options">
+<summary>Flexible timing <span class="text-muted fw-normal">Optional settings</span></summary>
+<label class="form-check my-3"><input asp-for="ShiftDays[i].IsFlexible" class="form-check-input" data-flexible /><span class="form-check-label">Enable flexible timing</span></label>
+<div class="shift-time-grid"><fieldset class="shift-time-field">
+<legend class="form-label fs-6 fw-semibold">Flexi in allowance</legend>
+<div class="shift-time-pair">
+<label><input asp-for="ShiftDays[i].FlexiInHours" type="number" min="0" max="23" class="form-control" placeholder="00" data-timing="FlexiInHours" /><span>Hours</span></label>
+<span aria-hidden="true">:</span>
+<label><input asp-for="ShiftDays[i].FlexiInMinutes" type="number" min="0" max="59" class="form-control" placeholder="00" data-timing="FlexiInMinutes" /><span>Minutes</span></label>
+</div></fieldset><fieldset class="shift-time-field">
+<legend class="form-label fs-6 fw-semibold">Flexi out allowance</legend>
+<div class="shift-time-pair">
+<label><input asp-for="ShiftDays[i].FlexiOutHours" type="number" min="0" max="23" class="form-control" placeholder="00" data-timing="FlexiOutHours" /><span>Hours</span></label>
+<span aria-hidden="true">:</span>
+<label><input asp-for="ShiftDays[i].FlexiOutMinutes" type="number" min="0" max="59" class="form-control" placeholder="00" data-timing="FlexiOutMinutes" /><span>Minutes</span></label>
+</div></fieldset></div>
+</details>
+</div><p class="shift-feedback small mb-0 mt-2" role="status"></p>
+</div></details>
+}
+</section>

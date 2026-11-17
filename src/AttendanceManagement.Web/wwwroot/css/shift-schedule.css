@@ -1,0 +1,33 @@
+.shift-week { --shift-accent: #087f8c; }
+.shift-week .shift-day { border: 1px solid #dce5e9; border-radius: 12px; margin-bottom: 10px; background: #fff; overflow: hidden; }
+.shift-week .shift-day > summary { display: flex; align-items: center; gap: 16px; padding: 17px 20px; cursor: pointer; list-style: none; }
+.shift-week summary::-webkit-details-marker { display: none; }
+.shift-week summary:focus-visible { outline: 3px solid var(--shift-accent); outline-offset: -3px; }
+.shift-week .shift-day[open] > summary { background: #edf7f7; border-bottom: 1px solid #dce5e9; }
+.shift-day-name { min-width: 100px; font-weight: 650; color: #1c3040; }
+.shift-day-summary { flex: 1; font-size: .875rem; color: #607584; }
+.shift-day > summary > i { color: var(--shift-accent); }
+.shift-day[open] > summary > i { transform: rotate(180deg); }
+.shift-day-body { padding: 20px; }
+.shift-day-types { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.shift-type { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid #dce5e9; border-radius: 8px; cursor: pointer; }
+.shift-type:has(input:checked) { background: #edf7f7; border-color: var(--shift-accent); color: #066571; }
+.shift-type .form-check-input { margin: 0; }
+.shift-time-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 850px; }
+.shift-time-field { min-width: 0; margin: 0; }
+.shift-time-pair { display: flex; align-items: baseline; gap: 8px; }
+.shift-time-pair label { width: 90px; }
+.shift-time-pair label span { display: block; font-size: .75rem; color: #607584; margin-top: 4px; }
+.shift-time-pair input { font-variant-numeric: tabular-nums; }
+.shift-options { border-top: 1px solid #dce5e9; margin-top: 16px; padding-top: 14px; }
+.shift-options > summary { cursor: pointer; font-weight: 600; color: #066571; }
+.shift-options > summary span { font-size: .8rem; margin-left: 8px; }
+.shift-feedback { color: #066571; }
+.shift-week [hidden] { display: none !important; }
+@media (max-width: 575px) {
+    .shift-week .shift-day > summary { gap: 8px; padding: 14px; flex-wrap: wrap; }
+    .shift-day-summary { order: 3; flex-basis: 100%; }
+    .shift-day > summary > i { margin-left: auto; }
+    .shift-day-body { padding: 14px; }
+    .shift-options > summary span { display: block; margin: 4px 0 0; }
+}
